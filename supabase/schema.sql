@@ -105,6 +105,9 @@ create index if not exists transactions_category_id_idx  on public.transactions 
 create index if not exists savings_deposits_user_id_idx  on public.savings_deposits (user_id);
 create index if not exists savings_deposits_date_idx     on public.savings_deposits (date);
 create index if not exists recurring_transactions_user_id_idx on public.recurring_transactions (user_id);
+-- Cobrem as chaves compostas que amarram a categoria ao dono.
+create index if not exists transactions_category_owner_idx on public.transactions (category_id, user_id);
+create index if not exists recurring_transactions_category_owner_idx on public.recurring_transactions (category_id, user_id);
 -- Impede que o mesmo vencimento de uma recorrente seja lançado duas vezes.
 create unique index if not exists transactions_recurring_once_idx on public.transactions (recurring_id, date);
 

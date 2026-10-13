@@ -67,6 +67,7 @@ export type RecurringInput = Pick<
   RecurringTransaction,
   'type' | 'amount' | 'description' | 'category_id' | 'day_of_month' | 'last_date'
 >
+export type RecurringUpdate = Pick<RecurringTransaction, 'amount' | 'description' | 'category_id' | 'day_of_month'>
 export type TransactionInput = Pick<
   Transaction,
   'type' | 'amount' | 'description' | 'category_id' | 'date'

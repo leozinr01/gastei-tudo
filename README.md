@@ -1,6 +1,6 @@
 # Gastei Tudo
 
-Sistema web de finanças pessoais: entradas e saídas, gráficos e meta semanal de poupança.
+Sistema web de finanças pessoais: entradas e saídas, transações que se repetem todo mês, limite de gasto por categoria, gráficos e meta de economia por dia, semana, quinzena ou mês. Pode ser instalado no celular como um app.
 
 **Stack:** React + Vite + TypeScript + Tailwind CSS, gráficos com Recharts e banco/autenticação no Supabase (sem servidor próprio).
 
@@ -18,6 +18,8 @@ Sistema web de finanças pessoais: entradas e saídas, gráficos e meta semanal 
 2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
 
 Isso cria as tabelas, os índices, as políticas de segurança (RLS) e o gatilho que gera as configurações e as categorias padrão de cada conta nova. O arquivo pode ser rodado mais de uma vez sem problema.
+
+> **Banco criado com uma versão antiga do arquivo?** Rode o `schema.sql` de novo: ele acrescenta as colunas e tabelas que faltam sem mexer nos dados. A pasta [`supabase/migrations`](supabase/migrations) guarda cada mudança separada, na ordem em que foi feita.
 
 ### 3. Preencher o .env
 
@@ -62,22 +64,25 @@ O passo 5 é necessário para os links de confirmação de conta e de recuperaç
 
 ## Como os números funcionam
 
-- **Saldo atual** = saldo inicial + entradas − saídas − tudo o que foi para a Reserva.
-- **Reserva** = soma de todos os valores marcados na Meta semanal. Não é uma transação e não entra como gasto nos gráficos de categoria.
-- **Semana** vai de domingo a sábado. A sugestão diária é o que falta dividido pelos dias de hoje até sábado ainda não marcados.
-- **Histórico da meta:** cada depósito guarda a meta que valia no dia (coluna `goal_snapshot`), então mudar a meta em Configurações não altera o resultado das semanas já concluídas.
+- **Saldo disponível** = saldo inicial + entradas − saídas − tudo o que foi para a Reserva.
+- **Reserva** = soma de todos os valores guardados na Meta. Não é uma transação e não entra como gasto nos gráficos de categoria.
+- **Meta:** a pessoa escolhe o período — diária, semanal (domingo a sábado), quinzenal (dia 1 ao 15 e 16 ao fim do mês) ou mensal. Trocar o período pede o novo valor, já sugerindo o equivalente.
+- **Histórico da meta:** cada depósito guarda a meta e o período que valiam no dia (`goal_snapshot` e `goal_period_snapshot`), então mudar o valor não altera os períodos já concluídos. Ao trocar o tipo de período, o histórico é reagrupado e passa a usar a meta atual.
+- **Recorrentes:** ao registrar uma transação, "Repetir todo mês" cria um modelo com o dia do mês. Ao abrir o app, ele lança o que venceu desde a última vez (no máximo um lançamento por mês; em meses mais curtos, no último dia). Parar uma recorrente não apaga o que já foi lançado.
+- **Limite por categoria:** cada categoria de saída pode ter um limite mensal. O Dashboard mostra quanto do limite já foi gasto no mês atual, seja qual for o período escolhido no topo.
 
 ## Estrutura
 
 ```
 supabase/schema.sql      SQL completo do banco
+supabase/migrations/     Cada mudança do banco, em separado
 src/
-  types/                 Tipos: Transaction, Category, SavingsDeposit, Settings
+  types/                 Tipos: Transaction, RecurringTransaction, Category, SavingsDeposit, Settings
   services/              Único lugar que conversa com o Supabase
   contexts/              Sessão (AuthContext) e dados do usuário (DataContext)
-  lib/                   Formatação, datas e cálculos financeiros
+  lib/                   Formatação, datas e cálculos (saldo, meta, recorrentes) e os testes deles
   components/            Layout, formulários e componentes de interface
-  pages/                 Dashboard, Transações, Meta semanal, Configurações, login
+  pages/                 Página inicial, Dashboard, Transações, Meta, Configurações, login
 ```
 
 ## Scripts
@@ -87,3 +92,4 @@ src/
 | `npm run dev` | Sobe o app em modo de desenvolvimento |
 | `npm run build` | Checa os tipos e gera a versão de produção em `dist/` |
 | `npm run preview` | Serve localmente a versão de produção |
+| `npm test` | Roda os testes dos cálculos (datas, saldo, meta e recorrentes) |

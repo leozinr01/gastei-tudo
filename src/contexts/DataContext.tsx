@@ -10,7 +10,7 @@ import * as savingsService from '../services/savings'
 import * as settingsService from '../services/settings'
 import * as transactionService from '../services/transactions'
 import type {
-  Category, CategoryInput, RecurringTransaction, SavingsDeposit, Settings, SettingsInput, Transaction, TransactionInput,
+  Category, CategoryInput, RecurringTransaction, RecurringUpdate, SavingsDeposit, Settings, SettingsInput, Transaction, TransactionInput,
 } from '../types'
 
 interface DataState {
@@ -26,6 +26,7 @@ interface DataState {
   /** Com `repeat`, a transação nova passa a se repetir todo mês, no mesmo dia. */
   saveTransaction: (input: TransactionInput, id?: string, options?: { repeat?: boolean }) => Promise<void>
   removeTransaction: (id: string) => Promise<void>
+  saveRecurring: (id: string, input: RecurringUpdate) => Promise<void>
   removeRecurring: (id: string) => Promise<void>
   saveCategory: (input: CategoryInput, id?: string) => Promise<void>
   removeCategory: (id: string) => Promise<void>
@@ -124,6 +125,11 @@ export function DataProvider({ userId, children }: { userId: string; children: R
     setTransactions((list) => [...added, ...list.filter((t) => !ids.has(t.id))].sort(byDateDesc))
   }, [])
 
+  const saveRecurring = useCallback(async (id: string, input: RecurringUpdate) => {
+    const saved = await recurringService.updateRecurring(id, input)
+    setRecurring((list) => list.map((r) => (r.id === id ? saved : r)))
+  }, [])
+
   const removeRecurring = useCallback(async (id: string) => {
     await recurringService.deleteRecurring(id)
     setRecurring((list) => list.filter((r) => r.id !== id))
@@ -180,12 +186,12 @@ export function DataProvider({ userId, children }: { userId: string; children: R
   const value = useMemo<DataState>(
     () => ({
       categories, transactions, recurring, deposits, settings, loading, error, reload,
-      saveTransaction, removeTransaction, removeRecurring, saveCategory, removeCategory,
+      saveTransaction, removeTransaction, saveRecurring, removeRecurring, saveCategory, removeCategory,
       saveDeposit, removeDeposit, saveSettings, resetAll,
     }),
     [
       categories, transactions, recurring, deposits, settings, loading, error, reload,
-      saveTransaction, removeTransaction, removeRecurring, saveCategory, removeCategory,
+      saveTransaction, removeTransaction, saveRecurring, removeRecurring, saveCategory, removeCategory,
       saveDeposit, removeDeposit, saveSettings, resetAll,
     ],
   )

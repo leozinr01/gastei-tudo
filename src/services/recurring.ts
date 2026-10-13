@@ -1,6 +1,6 @@
-import { addDays, addMonths, monthEnd, monthKey } from '../lib/dates'
+import { pendingDueDates } from '../lib/recurring'
 import { supabase } from '../lib/supabase'
-import type { RecurringInput, RecurringTransaction, Transaction } from '../types'
+import type { RecurringInput, RecurringTransaction, RecurringUpdate, Transaction } from '../types'
 import { requireUserId } from './auth'
 
 function normalize(row: RecurringTransaction): RecurringTransaction {
@@ -24,31 +24,22 @@ export async function createRecurring(input: RecurringInput): Promise<RecurringT
   return normalize(data as RecurringTransaction)
 }
 
+/** Muda o que será lançado daqui para a frente; as transações já lançadas não mudam. */
+export async function updateRecurring(id: string, input: RecurringUpdate): Promise<RecurringTransaction> {
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return normalize(data as RecurringTransaction)
+}
+
 /** Para de repetir. As transações já lançadas continuam no histórico. */
 export async function deleteRecurring(id: string): Promise<void> {
   const { error } = await supabase.from('recurring_transactions').delete().eq('id', id)
   if (error) throw error
-}
-
-/** Vencimento no mês: o dia escolhido ou, em meses mais curtos, o último dia. */
-function dueDateIn(month: string, day: number): string {
-  const last = monthEnd(month)
-  return day >= Number(last.slice(8)) ? last : `${month}-${String(day).padStart(2, '0')}`
-}
-
-// Proteção contra uma conta parada há muito tempo: no máximo três anos de lançamentos.
-const MAX_MONTHS = 36
-
-/** Vencimentos que ainda não foram lançados, do mais antigo para o mais novo, até hoje. */
-export function pendingDueDates(item: RecurringTransaction, today: string): string[] {
-  const after = item.last_date ?? addDays(item.created_at.slice(0, 10), -1)
-  const out: string[] = []
-  let month = monthKey(after)
-  for (let i = 0; i < MAX_MONTHS && month <= monthKey(today); i++, month = addMonths(month, 1)) {
-    const due = dueDateIn(month, item.day_of_month)
-    if (due > after && due <= today) out.push(due)
-  }
-  return out
 }
 
 /**

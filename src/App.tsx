@@ -1,15 +1,23 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import { Spinner, ToastProvider } from './components/ui'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import { isSupabaseConfigured } from './lib/supabase'
-import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from './pages/Auth'
-import DashboardPage from './pages/Dashboard'
-import LandingPage from './pages/Landing'
-import SettingsPage from './pages/Settings'
-import TransactionsPage from './pages/Transactions'
-import GoalPage from './pages/Goal'
+
+// Cada página vira um arquivo à parte, baixado só quando é aberta. Assim quem chega
+// na página inicial ou no login não baixa os gráficos do Dashboard.
+const auth = () => import('./pages/Auth')
+const LoginPage = lazy(() => auth().then((m) => ({ default: m.LoginPage })))
+const RegisterPage = lazy(() => auth().then((m) => ({ default: m.RegisterPage })))
+const ForgotPasswordPage = lazy(() => auth().then((m) => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazy(() => auth().then((m) => ({ default: m.ResetPasswordPage })))
+const DashboardPage = lazy(() => import('./pages/Dashboard'))
+const LandingPage = lazy(() => import('./pages/Landing'))
+const SettingsPage = lazy(() => import('./pages/Settings'))
+const TransactionsPage = lazy(() => import('./pages/Transactions'))
+const GoalPage = lazy(() => import('./pages/Goal'))
 
 /** Área logada: sem sessão, mostra a página inicial em "/" e manda as outras rotas para o login. */
 function ProtectedArea() {
@@ -55,6 +63,7 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
+        <Suspense fallback={<Spinner />}>
         <Routes>
           <Route element={<PublicOnly />}>
             <Route path="/login" element={<LoginPage />} />
@@ -70,6 +79,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </ToastProvider>
   )

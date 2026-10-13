@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { ArrowLeftRight, LayoutDashboard, ChevronLeft, ChevronRight, LogOut, PiggyBank, Settings, TrendingUp } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -143,7 +143,10 @@ export default function Layout() {
           </div>
         )}
         <main className="px-4 pb-28 pt-6 sm:px-6 md:px-8 md:pb-12 md:pt-8">
-          {loading ? <Spinner label="Carregando seus dados…" /> : error ? <ErrorBox message={error} onRetry={reload} /> : <Outlet />}
+          {loading ? <Spinner label="Carregando seus dados…" /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+            // A página é baixada sob demanda; enquanto chega, o menu continua na tela.
+            <Suspense fallback={<Spinner />}><Outlet /></Suspense>
+          )}
         </main>
       </div>
 
