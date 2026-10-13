@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { ArrowLeftRight, LayoutDashboard, ChevronLeft, ChevronRight, LogOut, PiggyBank, Settings, TrendingUp } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -111,20 +111,15 @@ export default function Layout() {
 
       {/* Topo (celular) */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/90 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-sm md:hidden">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            <TrendingUp className="h-4 w-4" />
-          </div>
-          <span className="truncate font-display text-lg text-neutral-50">{firstName ? `Olá, ${firstName}` : 'Gastei Tudo'}</span>
+        <div className="min-w-0">
+          <p className="text-xs text-neutral-500">Bem-vindo de volta</p>
+          <p className="truncate font-display text-xl leading-tight text-neutral-50">{firstName ? `Olá, ${firstName}` : 'Gastei Tudo'}</p>
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={leaving}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-400 hover:text-danger disabled:opacity-50"
-        >
-          <LogOut className="h-4 w-4" /> Sair
-        </button>
+        {/* No celular, sair da conta fica em Ajustes; a inicial leva até lá. */}
+        <Link to="/configuracoes" aria-label="Abrir ajustes da conta"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold uppercase text-brand">
+          {firstName ? firstName[0] : <Settings className="h-4 w-4" />}
+        </Link>
       </header>
 
       <div className={cx('transition-[padding] duration-200', open ? 'md:pl-56' : 'md:pl-[72px]')}>

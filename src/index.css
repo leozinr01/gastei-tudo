@@ -33,6 +33,9 @@
 
   html {
     color-scheme: dark;
+    /* Tela fixa no celular: só rolagem, sem zoom de pinça nem de toque duplo
+       (o iPhone ignora o user-scalable da meta viewport). */
+    touch-action: pan-x pan-y;
   }
   body {
     @apply bg-bg font-sans text-neutral-200 antialiased;

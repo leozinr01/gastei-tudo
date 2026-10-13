@@ -28,10 +28,10 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: 'in'
   )
 }
 
-/** Título que separa os blocos da página. */
+/** Título que separa os blocos da página. No celular não aparece: a tela segue enxuta, só com os cartões. */
 function SectionTitle({ children, first }: { children: React.ReactNode; first?: boolean }) {
   return (
-    <h2 className={cx('mb-3 flex items-center gap-3 text-sm font-semibold text-neutral-300', first ? 'mt-0' : 'mt-8')}>
+    <h2 className={cx('mb-3 flex items-center gap-3 text-sm font-semibold text-neutral-300 max-md:hidden', first ? 'mt-0' : 'mt-8')}>
       {children}
       <span className="h-px flex-1 bg-line" aria-hidden />
     </h2>
@@ -48,7 +48,7 @@ const CategoryPie = memo(function CategoryPie({ data }: { data: CategorySlice[] 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} paddingAngle={2} stroke="#141414" strokeWidth={2}>
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius="60%" outerRadius="90%" paddingAngle={2} stroke="#141414" strokeWidth={2}>
           {data.map((c) => <Cell key={c.name} fill={c.fill} />)}
         </Pie>
         <Tooltip content={<ChartTooltip />} />
@@ -101,21 +101,35 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Visão geral" title="Dashboard">
-        <Button className="max-md:hidden" icon={<Plus className="h-4 w-4" />} onClick={() => setFormOpen(true)}>Nova transação</Button>
-      </PageHeader>
+      {/* No celular o topo já traz a saudação; o título da página fica só em telas largas. */}
+      <div className="max-md:hidden">
+        <PageHeader eyebrow="Visão geral" title="Dashboard">
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setFormOpen(true)}>Nova transação</Button>
+        </PageHeader>
+      </div>
 
-      <div className="mb-5">
+      <div className="mb-4 md:mb-5">
         <PeriodFilter value={filter} onChange={setFilter} />
       </div>
 
       {/* Saldo + meta */}
       <SectionTitle first>Resumo</SectionTitle>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid gap-3 md:gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <section className="flex flex-col rounded-2xl border border-accent/25 bg-linear-to-br from-accent/[0.16] via-card to-card p-5 sm:p-6">
           <p className={cx(LABEL, 'text-accent')}>Saldo disponível</p>
           <p className={cx('mt-2 truncate font-display text-4xl sm:text-5xl', balance < 0 ? 'text-danger' : 'text-neutral-50')}>{formatBRL(balance)}</p>
-          <div className="mt-auto pt-6">
+          {/* Celular: entrou e saiu em dois blocos, como na prévia da página inicial. */}
+          <div className="mt-4 grid grid-cols-2 gap-2.5 md:hidden">
+            <div className="min-w-0 rounded-xl bg-bg/70 px-3.5 py-3">
+              <p className="flex items-center gap-1.5 text-xs text-neutral-500"><ArrowDownLeft className="h-3.5 w-3.5 text-brand" /> Entrou</p>
+              <p className="mt-1 truncate text-base font-semibold text-neutral-100">{formatBRL(periodTotals.income)}</p>
+            </div>
+            <div className="min-w-0 rounded-xl bg-bg/70 px-3.5 py-3">
+              <p className="flex items-center gap-1.5 text-xs text-neutral-500"><ArrowUpRight className="h-3.5 w-3.5 text-danger" /> Saiu</p>
+              <p className="mt-1 truncate text-base font-semibold text-neutral-100">{formatBRL(periodTotals.expense)}</p>
+            </div>
+          </div>
+          <div className="mt-auto pt-6 max-md:hidden">
             <p className="text-xs text-neutral-500">{formatDate(period.from)} a {formatDate(period.to)}</p>
             <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/10 pt-4">
               <Stat label="Entrou" value={periodTotals.income} tone="in" />
@@ -125,7 +139,19 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <Card className="flex flex-col">
+        {/* Celular: meta em uma faixa curta, que abre a página da meta ao tocar. */}
+        <Link to="/meta" className="block rounded-2xl border border-line bg-card p-5 md:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <p className={cx(LABEL, 'text-neutral-500')}>Meta {goalText.ofThe}</p>
+            <p className="text-sm font-semibold text-accent">{goal.percent}%</p>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
+            <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${goal.percent}%` }} />
+          </div>
+          <p className="mt-3 text-sm text-neutral-500"><span className="font-semibold text-neutral-200">{formatBRL(goal.saved)}</span> de {formatBRL(goal.goal)} guardados</p>
+        </Link>
+
+        <Card className="flex flex-col max-md:hidden">
           <div className="flex items-center justify-between gap-3">
             <p className={cx(LABEL, 'text-neutral-500')}>Meta {goalText.ofThe}</p>
             <Link to="/meta" className={CARD_LINK}>Abrir</Link>
@@ -146,7 +172,7 @@ export default function DashboardPage() {
       </div>
 
       {isEmpty ? (
-        <Card className="mt-5">
+        <Card className="mt-3 md:mt-5">
           <EmptyState icon={<Receipt className="h-5 w-5" />} title="Comece registrando uma transação"
             text="Assim que você lançar entradas e saídas, os gráficos e o histórico aparecem aqui."
             action={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setFormOpen(true)}>Nova transação</Button>} />
@@ -155,27 +181,27 @@ export default function DashboardPage() {
         <>
           {/* Categorias + recentes */}
           <SectionTitle>Gastos e movimentações</SectionTitle>
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <div className="grid gap-3 max-md:mt-3 md:gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <Card>
               <CardTitle eyebrow="Gastos por categoria" title="Para onde foi" />
               {byCategory.length === 0 ? (
                 <EmptyState icon={<PieIcon className="h-5 w-5" />} title="Sem saídas no período" text="Quando houver gastos neste período, eles aparecem aqui divididos por categoria." />
               ) : (
-                <div className="flex flex-col items-center gap-8 sm:flex-row">
-                  <div className="relative h-48 w-48 shrink-0">
+                <div className="flex items-center gap-4 sm:gap-8">
+                  <div className="relative h-32 w-32 shrink-0 sm:h-48 sm:w-48">
                     <CategoryPie data={byCategory} />
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                       <span className={cx(LABEL, 'text-[10px] text-neutral-500')}>Total</span>
-                      <span className="text-sm font-semibold text-neutral-100">{formatBRL(periodTotals.expense)}</span>
+                      <span className="text-[11px] font-semibold text-neutral-100 sm:text-sm">{formatBRL(periodTotals.expense)}</span>
                     </div>
                   </div>
-                  <ul className="w-full min-w-0 flex-1 space-y-3.5">
+                  <ul className="w-full min-w-0 flex-1 space-y-2.5 sm:space-y-3.5">
                     {byCategory.slice(0, TOP_CATEGORIES).map((c) => (
                       <li key={c.name} className="flex items-center gap-3 text-sm">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.fill }} />
                         <span className="min-w-0 truncate text-neutral-100">{c.name}</span>
-                        <span className="ml-auto shrink-0 pl-3 text-neutral-400">{formatBRL(c.value)}</span>
-                        <span className="w-9 shrink-0 text-right text-xs text-neutral-500">{Math.round((c.value / periodTotals.expense) * 100)}%</span>
+                        <span className="ml-auto shrink-0 pl-3 text-neutral-400 max-sm:hidden">{formatBRL(c.value)}</span>
+                        <span className="w-9 shrink-0 text-right text-xs text-neutral-500 max-sm:ml-auto">{Math.round((c.value / periodTotals.expense) * 100)}%</span>
                       </li>
                     ))}
                     {byCategory.length > TOP_CATEGORIES && (
@@ -211,7 +237,7 @@ export default function DashboardPage() {
 
           {/* Histórico de saldo */}
           <SectionTitle>Evolução</SectionTitle>
-          <Card>
+          <Card className="max-md:mt-3">
             <CardTitle eyebrow="No período" title="Histórico de saldo" />
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
