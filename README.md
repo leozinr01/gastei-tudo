@@ -1,95 +1,126 @@
-# Gastei Tudo
+<img width="100%" alt="Gastei Tudo" src="https://github.com/user-attachments/assets/e81dabc7-1b5e-43bc-85ba-e14eedc06e12" />
 
-Sistema web de finanças pessoais: entradas e saídas, transações que se repetem todo mês, limite de gasto por categoria, gráficos e meta de economia por dia, semana, quinzena ou mês. Pode ser instalado no celular como um app.
+<h1 align="center">Gastei Tudo</h1>
 
-**Stack:** React + Vite + TypeScript + Tailwind CSS, gráficos com Recharts e banco/autenticação no Supabase (sem servidor próprio).
+<p align="center">
+  <strong>Gastei tudo. Mas em quê?</strong><br>
+  Controle financeiro pessoal, simples e sem planilha.
+</p>
 
-## Passo a passo
+<p align="center">
+  <a href="https://gastei-tudo.vercel.app/"><img src="https://img.shields.io/badge/Acessar_o_app-f5b70a?style=for-the-badge&logoColor=000" alt="Acessar o app"></a>
+</p>
 
-### 1. Criar o projeto no Supabase
+<p align="center">
+  <img src="https://img.shields.io/badge/status-lançamento-22c55e?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/badge/preço-gratuito-f5b70a?style=flat-square" alt="Gratuito">
+  <img src="https://img.shields.io/badge/iOS_e_Android-tela_de_início-3b82f6?style=flat-square" alt="iOS e Android">
+</p>
 
-1. Acesse [supabase.com](https://supabase.com), entre na sua conta e clique em **New project**.
-2. Escolha um nome, uma senha para o banco e a região **South America (São Paulo)**.
-3. Aguarde o projeto terminar de ser criado.
+<p align="center">
+  <a href="#sobre-o-projeto">Sobre</a> •
+  <a href="#funcionalidades">Funcionalidades</a> •
+  <a href="#meta-de-economia">Meta de economia</a> •
+  <a href="#use-no-celular">Celular</a> •
+  <a href="#tecnologias">Tecnologias</a>
+</p>
 
-### 2. Rodar o schema.sql
+---
 
-1. No painel do projeto, abra **SQL Editor** > **New query**.
-2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
+## Sobre o projeto
 
-Isso cria as tabelas, os índices, as políticas de segurança (RLS) e o gatilho que gera as configurações e as categorias padrão de cada conta nova. O arquivo pode ser rodado mais de uma vez sem problema.
+Todo fim de mês era a mesma pergunta: *"com o que foi que eu gastei tudo isso?"*
 
-> **Banco criado com uma versão antiga do arquivo?** Rode o `schema.sql` de novo: ele acrescenta as colunas e tabelas que faltam sem mexer nos dados. A pasta [`supabase/migrations`](supabase/migrations) guarda cada mudança separada, na ordem em que foi feita.
+O **Gastei Tudo** nasceu para responder essa pergunta. Você anota o que entra e o que sai, enxerga para onde o dinheiro está indo e cria o hábito de guardar um pouco a cada período.
 
-### 3. Preencher o .env
+Sem planilhas, sem telas confusas: toda a gestão fica centralizada em um único dashboard, e o app funciona tanto no computador quanto no celular.
 
-1. No Supabase, abra **Project Settings** > **API** (ou o botão **Connect**) e copie a **Project URL** e a chave **anon / publishable**.
-2. Na pasta do projeto, copie o arquivo de exemplo e preencha:
+## Funcionalidades
 
-```bash
-cp .env.example .env
-```
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>Transações</h3>
+      Registre entradas e saídas em poucos segundos. O saldo é atualizado na hora e cada lançamento fica organizado por categoria.
+    </td>
+    <td width="50%" valign="top">
+      <h3>Recorrentes</h3>
+      Aluguel, assinaturas, salário: marque <strong>"Repetir todo mês"</strong> e o app lança sozinho no dia certo. Em meses mais curtos, cai no último dia.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>Categorias personalizadas</h3>
+      Use as categorias padrão ou crie as suas e descubra qual delas pesa mais no seu mês.
+    </td>
+    <td valign="top">
+      <h3>Limite por categoria</h3>
+      Defina quanto pode gastar por mês em cada categoria e acompanhe no dashboard quanto do limite já foi usado.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>Gráficos</h3>
+      Veja de forma visual quanto entrou, quanto saiu e para onde o dinheiro foi, com a divisão dos gastos por categoria.
+    </td>
+    <td valign="top">
+      <h3>Reserva</h3>
+      Tudo o que você guarda vai para a Reserva, separada do saldo do dia a dia. Fica claro o que dá pra gastar e o que já está guardado.
+    </td>
+  </tr>
+</table>
 
-```
-VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=sua-chave-anon
-```
+## Meta de economia
 
-A chave *anon* pode ficar no front-end: quem protege os dados é o Row Level Security. **Nunca** use a chave `service_role` aqui.
+O coração do app. Em vez de torcer para sobrar alguma coisa no fim do mês, você define quanto quer guardar e acompanha o progresso até bater a meta.
 
-### 4. Rodar localmente
+| Período | Como funciona |
+| --- | --- |
+| **Diária** | Uma meta para cada dia |
+| **Semanal** | De domingo a sábado |
+| **Quinzenal** | Do dia 1 ao 15 e do dia 16 ao fim do mês |
+| **Mensal** | O mês inteiro |
 
-Requer Node.js 18 ou superior.
-
-```bash
-npm install
-npm run dev
-```
-
-Abra `http://localhost:5173`, crie sua conta e pronto.
-
-> Por padrão o Supabase pede confirmação por e-mail no cadastro. Para uso pessoal, você pode desligar em **Authentication** > **Sign In / Providers** > **Email** > *Confirm email*.
-
-### 5. Publicar na Vercel
-
-1. Suba o projeto para um repositório no GitHub (o `.env` já está no `.gitignore`).
-2. Em [vercel.com](https://vercel.com), clique em **Add New** > **Project** e importe o repositório. A Vercel detecta o Vite sozinha (build `npm run build`, saída `dist`).
-3. Em **Environment Variables**, adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com os mesmos valores do `.env`.
-4. Clique em **Deploy**.
-5. De volta ao Supabase, em **Authentication** > **URL Configuration**:
-   - **Site URL:** o endereço da Vercel (ex.: `https://meu-app.vercel.app`)
-   - **Redirect URLs:** adicione `https://meu-app.vercel.app/**` e `http://localhost:5173/**`
-
-O passo 5 é necessário para os links de confirmação de conta e de recuperação de senha abrirem o seu app. O arquivo `vercel.json` já cuida das rotas (atualizar a página em `/meta`, por exemplo, não dá erro 404).
+- Ao trocar o período, o app já sugere o valor equivalente
+- Cada período concluído fica salvo no **histórico** com a meta que valia na época, então mudar o valor depois não apaga o que você já conquistou
 
 ## Como os números funcionam
 
-- **Saldo disponível** = saldo inicial + entradas − saídas − tudo o que foi para a Reserva.
-- **Reserva** = soma de todos os valores guardados na Meta. Não é uma transação e não entra como gasto nos gráficos de categoria.
-- **Meta:** a pessoa escolhe o período — diária, semanal (domingo a sábado), quinzenal (dia 1 ao 15 e 16 ao fim do mês) ou mensal. Trocar o período pede o novo valor, já sugerindo o equivalente.
-- **Histórico da meta:** cada depósito guarda a meta e o período que valiam no dia (`goal_snapshot` e `goal_period_snapshot`), então mudar o valor não altera os períodos já concluídos. Ao trocar o tipo de período, o histórico é reagrupado e passa a usar a meta atual.
-- **Recorrentes:** ao registrar uma transação, "Repetir todo mês" cria um modelo com o dia do mês. Ao abrir o app, ele lança o que venceu desde a última vez (no máximo um lançamento por mês; em meses mais curtos, no último dia). Parar uma recorrente não apaga o que já foi lançado.
-- **Limite por categoria:** cada categoria de saída pode ter um limite mensal. O Dashboard mostra quanto do limite já foi gasto no mês atual, seja qual for o período escolhido no topo.
-
-## Estrutura
-
 ```
-supabase/schema.sql      SQL completo do banco
-supabase/migrations/     Cada mudança do banco, em separado
-src/
-  types/                 Tipos: Transaction, RecurringTransaction, Category, SavingsDeposit, Settings
-  services/              Único lugar que conversa com o Supabase
-  contexts/              Sessão (AuthContext) e dados do usuário (DataContext)
-  lib/                   Formatação, datas e cálculos (saldo, meta, recorrentes) e os testes deles
-  components/            Layout, formulários e componentes de interface
-  pages/                 Página inicial, Dashboard, Transações, Meta, Configurações, login
+Saldo disponível = saldo inicial + entradas − saídas − valores guardados na Reserva
 ```
 
-## Scripts
+- A **Reserva** é a soma de tudo o que foi guardado na meta e não entra como gasto nos gráficos
+- O **limite por categoria** é sempre calculado sobre o mês atual
+- Parar uma **recorrente** não apaga os lançamentos que já foram feitos
 
-| Comando | O que faz |
+## Use no celular
+
+Não precisa baixar nada da loja. O Gastei Tudo pode ser adicionado à tela de início e funciona como um app, com ícone próprio e em tela cheia.
+
+| | Passo a passo |
 | --- | --- |
-| `npm run dev` | Sobe o app em modo de desenvolvimento |
-| `npm run build` | Checa os tipos e gera a versão de produção em `dist/` |
-| `npm run preview` | Serve localmente a versão de produção |
-| `npm test` | Roda os testes dos cálculos (datas, saldo, meta e recorrentes) |
+| **iPhone** | Abra o link no Safari → toque em **Compartilhar** → **Adicionar à Tela de Início** |
+| **Android** | Abra o link no Chrome → toque nos **três pontinhos** → **Adicionar à tela inicial** |
+
+## Tecnologias
+
+<p>
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/Recharts-22B5BF?style=for-the-badge" alt="Recharts">
+  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel">
+</p>
+
+## Feedback
+
+O app está em fase de lançamento e é gratuito. Sugestões, ideias e relatos de bugs são muito bem-vindos: abra uma [issue](../../issues) ou entre em contato.
+
+---
+
+<p align="center">
+  Feito para quem já se perguntou <em>"gastei com o quê?"</em>
+</p>
