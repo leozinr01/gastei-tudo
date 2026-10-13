@@ -3,7 +3,8 @@ import { Pencil, Plus, Tags, Trash2, X } from 'lucide-react'
 import { useData } from '../contexts/DataContext'
 import { errorMessage } from '../lib/errors'
 import type { Category, TransactionType } from '../types'
-import { Button, ConfirmDialog, EmptyState, IconButton, useToast } from './ui'
+import { formatBRL } from '../lib/format'
+import { Button, ConfirmDialog, EmptyState, IconButton, MoneyInput, useToast } from './ui'
 
 const SWATCHES = ['#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#a3a3a3']
 
@@ -14,6 +15,7 @@ export default function CategoryManager() {
   const [name, setName] = useState('')
   const [type, setType] = useState<TransactionType>('expense')
   const [color, setColor] = useState(SWATCHES[0])
+  const [limit, setLimit] = useState(0)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [toDelete, setToDelete] = useState<Category | null>(null)
@@ -22,6 +24,7 @@ export default function CategoryManager() {
   function reset() {
     setEditingId(null)
     setName('')
+    setLimit(0)
     setError('')
   }
 
@@ -30,6 +33,7 @@ export default function CategoryManager() {
     setName(c.name)
     setType(c.type)
     setColor(c.color)
+    setLimit(c.monthly_limit ?? 0)
     setError('')
   }
 
@@ -44,7 +48,7 @@ export default function CategoryManager() {
 
     setSaving(true)
     try {
-      await saveCategory({ name: trimmed, type, color }, editingId ?? undefined)
+      await saveCategory({ name: trimmed, type, color, monthly_limit: type === 'expense' && limit > 0 ? limit : null }, editingId ?? undefined)
       toast.success(editingId ? 'Categoria atualizada.' : 'Categoria criada.')
       reset()
     } catch (err) {
@@ -88,6 +92,13 @@ export default function CategoryManager() {
             </select>
           </div>
         </div>
+        {type === 'expense' && (
+          <div className="mt-3">
+            <label className="field-label" htmlFor="cat-limit">Limite por mês (opcional)</label>
+            <MoneyInput id="cat-limit" value={limit} onChange={setLimit} />
+            <p className="mt-1.5 text-xs text-neutral-600">Deixe em 0,00 para não ter limite. O Dashboard mostra quanto do limite já foi gasto no mês.</p>
+          </div>
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {SWATCHES.map((s) => (
             <button key={s} type="button" aria-label={`Cor ${s}`} aria-pressed={color === s} onClick={() => setColor(s)}
@@ -119,7 +130,10 @@ export default function CategoryManager() {
                 {categories.filter((c) => c.type === t).map((c) => (
                   <li key={c.id} className="flex items-center gap-3 py-2">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: c.color }} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-neutral-200">{c.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-neutral-200">{c.name}</span>
+                      {c.monthly_limit && <span className="block text-xs text-neutral-500">até {formatBRL(c.monthly_limit)} por mês</span>}
+                    </span>
                     <IconButton label={`Editar ${c.name}`} onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /></IconButton>
                     <IconButton label={`Excluir ${c.name}`} onClick={() => setToDelete(c)} className="hover:!text-danger"><Trash2 className="h-4 w-4" /></IconButton>
                   </li>

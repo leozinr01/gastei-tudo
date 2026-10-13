@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Receipt, Search, Tags, Trash2 } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Receipt, Repeat, Search, Tags, Trash2 } from 'lucide-react'
 import CategoryManager from '../components/CategoryManager'
+import RecurringManager from '../components/RecurringManager'
 import TransactionForm from '../components/TransactionForm'
 import { Button, Card, ConfirmDialog, cx, EmptyState, IconButton, Modal, PageHeader, useToast } from '../components/ui'
 import { useData } from '../contexts/DataContext'
@@ -50,20 +51,24 @@ function TransactionColumn({ type, items, total, filtered, categoryById, onEdit,
             {items.slice(0, limit).map((t) => {
               const cat = t.category_id ? categoryById.get(t.category_id) : undefined
               return (
-                <li key={t.id} className="flex items-center gap-3 py-3 pl-4 pr-2 sm:pl-6 sm:pr-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-neutral-100">{t.description || (cat?.name ?? (income ? 'Entrada' : 'Saída'))}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
-                      <span className="shrink-0">{formatDate(t.date)}</span>
-                      <span>·</span>
-                      {cat && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cat.color }} />}
-                      <span className="truncate">{cat?.name ?? 'Sem categoria'}</span>
-                    </p>
-                  </div>
-                  <span className={cx('shrink-0 text-sm font-semibold', income ? 'text-brand' : 'text-danger')}>
-                    {income ? '+' : '−'} {formatBRL(t.amount)}
-                  </span>
-                  <div className="flex shrink-0">
+                <li key={t.id} className="flex items-center gap-1 pr-2 sm:pr-4">
+                  {/* A linha inteira abre a edição; no celular os botões somem e o excluir fica lá dentro. */}
+                  <button type="button" onClick={() => onEdit(t)} className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left sm:pl-6">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-neutral-100">{t.description || (cat?.name ?? (income ? 'Entrada' : 'Saída'))}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
+                        {t.recurring_id && <Repeat className="h-3 w-3 shrink-0" aria-label="Lançada automaticamente" />}
+                        <span className="shrink-0">{formatDate(t.date)}</span>
+                        <span>·</span>
+                        {cat && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cat.color }} />}
+                        <span className="truncate">{cat?.name ?? 'Sem categoria'}</span>
+                      </span>
+                    </span>
+                    <span className={cx('shrink-0 text-sm font-semibold', income ? 'text-brand' : 'text-danger')}>
+                      {income ? '+' : '−'} {formatBRL(t.amount)}
+                    </span>
+                  </button>
+                  <div className="flex shrink-0 max-sm:hidden">
                     <IconButton label="Editar" onClick={() => onEdit(t)}><Pencil className="h-4 w-4" /></IconButton>
                     <IconButton label="Excluir" onClick={() => onDelete(t)} className="hover:!text-danger"><Trash2 className="h-4 w-4" /></IconButton>
                   </div>
@@ -93,6 +98,7 @@ export default function TransactionsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const [recurringOpen, setRecurringOpen] = useState(false)
   const [toDelete, setToDelete] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -152,6 +158,7 @@ export default function TransactionsPage() {
     <>
       <PageHeader eyebrow="Entradas e saídas" title="Transações">
         <Button variant="secondary" icon={<Tags className="h-4 w-4" />} onClick={() => setCategoriesOpen(true)}>Categorias</Button>
+        <Button variant="secondary" icon={<Repeat className="h-4 w-4" />} onClick={() => setRecurringOpen(true)}>Recorrentes</Button>
         <Button icon={<Plus className="h-4 w-4" />} onClick={openNew}>Nova transação</Button>
       </PageHeader>
 
@@ -178,8 +185,15 @@ export default function TransactionsPage() {
             ))}
             <option value="none">Sem categoria</option>
           </select>
-          <input type="date" className="field" aria-label="A partir de" title="A partir de" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-          <input type="date" className="field" aria-label="Até" title="Até" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          {/* No celular o campo de data vazio aparece em branco, então cada um leva o nome em cima. */}
+          <label className="block min-w-0">
+            <span className="field-label lg:sr-only">A partir de</span>
+            <input type="date" className="field min-w-0" title="A partir de" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+          </label>
+          <label className="block min-w-0">
+            <span className="field-label lg:sr-only">Até</span>
+            <input type="date" className="field min-w-0" title="Até" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          </label>
         </div>
         {hasFilters && (
           <div className="mt-3 text-right text-xs">
@@ -205,9 +219,12 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      <TransactionForm open={formOpen} editing={editing} onClose={() => setFormOpen(false)} />
+      <TransactionForm open={formOpen} editing={editing} onClose={() => setFormOpen(false)} onDelete={setToDelete} />
       <Modal open={categoriesOpen} onClose={() => setCategoriesOpen(false)} eyebrow="Organização" title="Categorias">
         <CategoryManager />
+      </Modal>
+      <Modal open={recurringOpen} onClose={() => setRecurringOpen(false)} eyebrow="Todo mês" title="Recorrentes">
+        <RecurringManager />
       </Modal>
       <ConfirmDialog
         open={Boolean(toDelete)}

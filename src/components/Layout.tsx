@@ -102,7 +102,7 @@ export default function Layout() {
           disabled={leaving}
           title={open ? undefined : 'Sair'}
           aria-label="Sair"
-          className={cx(item, 'text-neutral-500 hover:bg-danger/10 hover:text-danger disabled:opacity-50')}
+          className={cx(item, 'text-danger hover:bg-danger/10 disabled:opacity-50')}
         >
           <LogOut className="h-5 w-5 shrink-0" />
           {open && <span className="truncate">Sair</span>}
@@ -120,7 +120,7 @@ export default function Layout() {
             type="button"
             onClick={handleSignOut}
             disabled={leaving}
-            className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-neutral-400 hover:text-danger disabled:opacity-50"
+            className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" /> Sair
           </button>

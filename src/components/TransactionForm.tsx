@@ -9,9 +9,11 @@ interface Props {
   open: boolean
   editing?: Transaction | null
   onClose: () => void
+  /** Com isso, a edição ganha o botão de excluir (a confirmação fica por conta de quem chama). */
+  onDelete?: (transaction: Transaction) => void
 }
 
-export default function TransactionForm({ open, editing, onClose }: Props) {
+export default function TransactionForm({ open, editing, onClose, onDelete }: Props) {
   const { categories, saveTransaction } = useData()
   const toast = useToast()
   const [type, setType] = useState<TransactionType>('expense')
@@ -19,6 +21,7 @@ export default function TransactionForm({ open, editing, onClose }: Props) {
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [date, setDate] = useState(todayISO())
+  const [repeat, setRepeat] = useState(false)
   const [errors, setErrors] = useState<{ amount?: string; date?: string }>({})
   const [saving, setSaving] = useState(false)
 
@@ -29,6 +32,7 @@ export default function TransactionForm({ open, editing, onClose }: Props) {
     setDescription(editing?.description ?? '')
     setCategoryId(editing?.category_id ?? '')
     setDate(editing?.date ?? todayISO())
+    setRepeat(false)
     setErrors({})
   }, [open, editing])
 
@@ -52,8 +56,9 @@ export default function TransactionForm({ open, editing, onClose }: Props) {
       await saveTransaction(
         { type, amount, description: description.trim(), category_id: categoryId || null, date },
         editing?.id,
+        { repeat },
       )
-      toast.success(editing ? 'Transação atualizada.' : 'Transação registrada.')
+      toast.success(editing ? 'Transação atualizada.' : repeat ? `Transação registrada. Ela se repete todo dia ${Number(date.slice(8))}.` : 'Transação registrada.')
       onClose()
     } catch (err) {
       toast.error(errorMessage(err, 'Não foi possível salvar a transação.'))
@@ -117,7 +122,17 @@ export default function TransactionForm({ open, editing, onClose }: Props) {
           </div>
         </div>
 
+        {!editing && (
+          <label className="flex cursor-pointer items-center gap-2.5 text-sm text-neutral-300">
+            <input type="checkbox" className="h-4 w-4 accent-yellow-500" checked={repeat} onChange={(e) => setRepeat(e.target.checked)} />
+            Repetir todo mês{date ? `, no dia ${Number(date.slice(8))}` : ''}
+          </label>
+        )}
+
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          {editing && onDelete && (
+            <Button variant="danger" className="sm:mr-auto" disabled={saving} onClick={() => { onClose(); onDelete(editing) }}>Excluir</Button>
+          )}
           <Button variant="ghost" onClick={onClose} disabled={saving}>Cancelar</Button>
           <Button type="submit" loading={saving}>{editing ? 'Salvar alterações' : 'Adicionar'}</Button>
         </div>

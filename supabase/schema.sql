@@ -12,7 +12,9 @@ create table if not exists public.categories (
   user_id  uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name     text not null check (char_length(trim(name)) > 0),
   color    text not null default '#22c55e',
-  type     text not null check (type in ('income', 'expense'))
+  type     text not null check (type in ('income', 'expense')),
+  -- Quanto a pessoa quer gastar por mês na categoria (vazio = sem limite).
+  monthly_limit numeric(12,2) check (monthly_limit > 0)
 );
 
 create table if not exists public.transactions (
@@ -49,6 +51,27 @@ create table if not exists public.settings (
   initial_balance numeric(12,2) not null default 0
 );
 
+-- Modelo de uma transação que se repete todo mês, no dia escolhido.
+-- last_date é o último vencimento já lançado; o app lança os seguintes ao abrir.
+create table if not exists public.recurring_transactions (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  type         text not null check (type in ('income', 'expense')),
+  amount       numeric(12,2) not null check (amount > 0),
+  description  text not null default '',
+  category_id  uuid,
+  day_of_month smallint not null check (day_of_month between 1 and 31),
+  last_date    date,
+  created_at   timestamptz not null default now()
+);
+
+-- Colunas acrescentadas depois da primeira versão (bancos já criados recebem aqui).
+alter table public.categories       add column if not exists monthly_limit numeric(12,2) check (monthly_limit > 0);
+alter table public.settings         add column if not exists goal_period text not null default 'weekly' check (goal_period in ('daily', 'weekly', 'biweekly', 'monthly'));
+alter table public.savings_deposits add column if not exists goal_period_snapshot text check (goal_period_snapshot in ('daily', 'weekly', 'biweekly', 'monthly'));
+-- A transação lançada sozinha aponta para o modelo recorrente de origem.
+alter table public.transactions     add column if not exists recurring_id uuid references public.recurring_transactions (id) on delete set null;
+
 -- Uma transação só pode usar categoria do mesmo usuário. A chave composta
 -- vale mesmo para quem tenta apontar para o id de uma categoria alheia.
 do $$
@@ -60,6 +83,12 @@ begin
   if not exists (select 1 from pg_constraint where conname = 'transactions_category_owner_fkey') then
     alter table public.transactions
       add constraint transactions_category_owner_fkey
+      foreign key (category_id, user_id) references public.categories (id, user_id)
+      on delete set null (category_id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'recurring_category_owner_fkey') then
+    alter table public.recurring_transactions
+      add constraint recurring_category_owner_fkey
       foreign key (category_id, user_id) references public.categories (id, user_id)
       on delete set null (category_id);
   end if;
@@ -75,6 +104,9 @@ create index if not exists transactions_user_date_idx    on public.transactions 
 create index if not exists transactions_category_id_idx  on public.transactions (category_id);
 create index if not exists savings_deposits_user_id_idx  on public.savings_deposits (user_id);
 create index if not exists savings_deposits_date_idx     on public.savings_deposits (date);
+create index if not exists recurring_transactions_user_id_idx on public.recurring_transactions (user_id);
+-- Impede que o mesmo vencimento de uma recorrente seja lançado duas vezes.
+create unique index if not exists transactions_recurring_once_idx on public.transactions (recurring_id, date);
 
 -- ---------------------------------------------------------------------
 -- Row Level Security: cada usuário só enxerga e altera os próprios dados
@@ -83,12 +115,13 @@ alter table public.categories       enable row level security;
 alter table public.transactions     enable row level security;
 alter table public.savings_deposits enable row level security;
 alter table public.settings         enable row level security;
+alter table public.recurring_transactions enable row level security;
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['categories', 'transactions', 'savings_deposits', 'settings'] loop
+  foreach t in array array['categories', 'transactions', 'savings_deposits', 'settings', 'recurring_transactions'] loop
     execute format('drop policy if exists "%1$s_select_own" on public.%1$I', t);
     execute format('drop policy if exists "%1$s_insert_own" on public.%1$I', t);
     execute format('drop policy if exists "%1$s_update_own" on public.%1$I', t);
@@ -169,10 +202,11 @@ begin
     raise exception 'Usuário não autenticado';
   end if;
 
-  delete from public.transactions     where user_id = uid;
-  delete from public.savings_deposits where user_id = uid;
-  delete from public.categories       where user_id = uid;
-  delete from public.settings         where user_id = uid;
+  delete from public.transactions           where user_id = uid;
+  delete from public.recurring_transactions where user_id = uid;
+  delete from public.savings_deposits       where user_id = uid;
+  delete from public.categories             where user_id = uid;
+  delete from public.settings               where user_id = uid;
 
   perform public.seed_user_defaults(uid);
 end;

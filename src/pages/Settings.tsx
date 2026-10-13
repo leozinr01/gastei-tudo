@@ -14,7 +14,7 @@ const CONFIRM_WORD = 'APAGAR'
 
 export default function SettingsPage() {
   const { user } = useAuth()
-  const { settings, categories, transactions, deposits, saveSettings, resetAll } = useData()
+  const { settings, categories, transactions, recurring, deposits, saveSettings, resetAll } = useData()
   const toast = useToast()
   const [goal, setGoal] = useState(settings.weekly_goal)
   const [goalPeriod, setGoalPeriod] = useState(settings.goal_period)
@@ -68,7 +68,7 @@ export default function SettingsPage() {
 
   function handleExport() {
     try {
-      downloadExport({ settings, categories, transactions, savings_deposits: deposits })
+      downloadExport({ settings, categories, transactions, recurring_transactions: recurring, savings_deposits: deposits })
       toast.success('Arquivo JSON gerado.')
     } catch (err) {
       toast.error(errorMessage(err, 'Não foi possível exportar os dados.'))

@@ -9,7 +9,7 @@ import PeriodFilter, { defaultPeriodState } from '../components/PeriodFilter'
 import TransactionForm from '../components/TransactionForm'
 import { Button, Card, CardTitle, cx, EmptyState, PageHeader } from '../components/ui'
 import { useData } from '../contexts/DataContext'
-import { todayISO } from '../lib/dates'
+import { monthKey, todayISO } from '../lib/dates'
 import { availableBalance, balanceSeries, inPeriod, totals } from '../lib/finance'
 import { formatBRL, formatCompact, formatDate, formatDayMonth } from '../lib/format'
 import { currentGoalStatus, GOAL_PERIODS } from '../lib/goal'
@@ -94,6 +94,20 @@ export default function DashboardPage() {
     }
     return [...map.values()].map((c) => ({ ...c, value: Math.round(c.value * 100) / 100 })).sort((a, b) => b.value - a.value)
   }, [periodTx, categories])
+
+  // Limites valem sempre para o mês atual, seja qual for o período escolhido no topo.
+  const limits = useMemo(() => {
+    const month = monthKey(todayISO())
+    const spent = new Map<string, number>()
+    for (const t of transactions) {
+      if (t.type !== 'expense' || !t.category_id || monthKey(t.date) !== month) continue
+      spent.set(t.category_id, (spent.get(t.category_id) ?? 0) + t.amount)
+    }
+    return categories
+      .filter((c) => c.type === 'expense' && c.monthly_limit)
+      .map((c) => ({ id: c.id, name: c.name, color: c.color, limit: c.monthly_limit!, spent: Math.round((spent.get(c.id) ?? 0) * 100) / 100 }))
+      .sort((a, b) => b.spent / b.limit - a.spent / a.limit)
+  }, [transactions, categories])
 
   const recent = transactions.slice(0, 5)
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
@@ -234,6 +248,37 @@ export default function DashboardPage() {
               </ul>
             </Card>
           </div>
+
+          {/* Limites por categoria (só para quem definiu algum) */}
+          {limits.length > 0 && (
+            <>
+              <SectionTitle>Limites do mês</SectionTitle>
+              <Card className="max-md:mt-3">
+                <CardTitle eyebrow="Mês atual" title="Limites por categoria" />
+                <ul className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {limits.map((l) => {
+                    const ratio = l.spent / l.limit
+                    const over = l.spent > l.limit
+                    return (
+                      <li key={l.id}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: l.color }} />
+                          <span className="min-w-0 flex-1 truncate text-neutral-100">{l.name}</span>
+                          <span className="shrink-0 text-neutral-400">{formatBRL(l.spent)} de {formatBRL(l.limit)}</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={Math.min(100, Math.round(ratio * 100))} aria-valuemin={0} aria-valuemax={100} aria-label={`Limite de ${l.name}`}>
+                          <div className={cx('h-full rounded-full transition-all duration-500', over ? 'bg-danger' : ratio >= 0.8 ? 'bg-accent' : 'bg-brand')} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
+                        </div>
+                        <p className={cx('mt-1.5 text-xs', over ? 'text-danger' : ratio >= 0.8 ? 'text-accent' : 'text-neutral-500')}>
+                          {over ? `Passou ${formatBRL(l.spent - l.limit)} do limite` : `Restam ${formatBRL(l.limit - l.spent)}`}
+                        </p>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </Card>
+            </>
+          )}
 
           {/* Histórico de saldo */}
           <SectionTitle>Evolução</SectionTitle>

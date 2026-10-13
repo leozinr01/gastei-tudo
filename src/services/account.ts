@@ -1,11 +1,12 @@
 import { supabase } from '../lib/supabase'
-import type { Category, SavingsDeposit, Settings, Transaction } from '../types'
+import type { Category, RecurringTransaction, SavingsDeposit, Settings, Transaction } from '../types'
 
 export interface ExportPayload {
   exported_at: string
   settings: Settings
   categories: Category[]
   transactions: Transaction[]
+  recurring_transactions: RecurringTransaction[]
   savings_deposits: SavingsDeposit[]
 }
 

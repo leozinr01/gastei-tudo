@@ -1,26 +1,32 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
+import { todayISO } from '../lib/dates'
 import { errorMessage } from '../lib/errors'
 import * as accountService from '../services/account'
 import * as categoryService from '../services/categories'
+import * as recurringService from '../services/recurring'
 import * as savingsService from '../services/savings'
 import * as settingsService from '../services/settings'
 import * as transactionService from '../services/transactions'
 import type {
-  Category, CategoryInput, SavingsDeposit, Settings, SettingsInput, Transaction, TransactionInput,
+  Category, CategoryInput, RecurringTransaction, SavingsDeposit, Settings, SettingsInput, Transaction, TransactionInput,
 } from '../types'
 
 interface DataState {
   categories: Category[]
   transactions: Transaction[]
+  /** Transações que se repetem todo mês */
+  recurring: RecurringTransaction[]
   deposits: SavingsDeposit[]
   settings: Settings
   loading: boolean
   error: string | null
   reload: () => Promise<void>
-  saveTransaction: (input: TransactionInput, id?: string) => Promise<void>
+  /** Com `repeat`, a transação nova passa a se repetir todo mês, no mesmo dia. */
+  saveTransaction: (input: TransactionInput, id?: string, options?: { repeat?: boolean }) => Promise<void>
   removeTransaction: (id: string) => Promise<void>
+  removeRecurring: (id: string) => Promise<void>
   saveCategory: (input: CategoryInput, id?: string) => Promise<void>
   removeCategory: (id: string) => Promise<void>
   saveDeposit: (date: string, amount: number) => Promise<void>
@@ -38,6 +44,7 @@ const byName = (a: Category, b: Category) => a.name.localeCompare(b.name, 'pt-BR
 export function DataProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [recurring, setRecurring] = useState<RecurringTransaction[]>([])
   const [deposits, setDeposits] = useState<SavingsDeposit[]>([])
   const [settings, setSettings] = useState<Settings>({
     user_id: userId,
@@ -57,16 +64,29 @@ export function DataProvider({ userId, children }: { userId: string; children: R
     setLoading(true)
     setError(null)
     try {
-      const [s, c, t, d] = await Promise.all([
+      const [s, c, loaded, d, models] = await Promise.all([
         settingsService.getSettings(),
         categoryService.listCategories(),
         transactionService.listTransactions(),
         savingsService.listDeposits(),
+        recurringService.listRecurring(),
       ])
+      // Lança o que venceu das recorrentes antes de mostrar, para a tela já abrir completa.
+      // Se falhar, o app abre do mesmo jeito e tenta de novo na próxima vez.
+      let t = loaded
+      let r = models
+      try {
+        const due = await recurringService.launchDue(models, todayISO())
+        if (due.created.length) t = [...due.created, ...loaded].sort(byDateDesc)
+        r = due.recurring
+      } catch {
+        /* segue com o que já estava no banco */
+      }
       if (id !== loadId.current) return
       setSettings(s)
       setCategories(c.sort(byName))
       setTransactions(t)
+      setRecurring(r)
       setDeposits(d)
     } catch (e) {
       if (id !== loadId.current) return
@@ -80,11 +100,35 @@ export function DataProvider({ userId, children }: { userId: string; children: R
     void reload()
   }, [reload, userId])
 
-  const saveTransaction = useCallback(async (input: TransactionInput, id?: string) => {
+  const saveTransaction = useCallback(async (input: TransactionInput, id?: string, options?: { repeat?: boolean }) => {
     const saved = id
       ? await transactionService.updateTransaction(id, input)
       : await transactionService.createTransaction(input)
-    setTransactions((list) => [saved, ...list.filter((t) => t.id !== saved.id)].sort(byDateDesc))
+    let added = [saved]
+    if (!id && options?.repeat) {
+      // A transação recém-criada já vale como o primeiro lançamento; se a data for antiga,
+      // os meses entre ela e hoje são lançados agora.
+      const model = await recurringService.createRecurring({
+        type: input.type,
+        amount: input.amount,
+        description: input.description,
+        category_id: input.category_id,
+        day_of_month: Number(input.date.slice(8)),
+        last_date: input.date,
+      })
+      const due = await recurringService.launchDue([model], todayISO())
+      added = [saved, ...due.created]
+      setRecurring((list) => [...list, ...due.recurring])
+    }
+    const ids = new Set(added.map((t) => t.id))
+    setTransactions((list) => [...added, ...list.filter((t) => !ids.has(t.id))].sort(byDateDesc))
+  }, [])
+
+  const removeRecurring = useCallback(async (id: string) => {
+    await recurringService.deleteRecurring(id)
+    setRecurring((list) => list.filter((r) => r.id !== id))
+    // O banco faz "on delete set null" na transação lançada; espelhamos isso localmente.
+    setTransactions((list) => list.map((t) => (t.recurring_id === id ? { ...t, recurring_id: null } : t)))
   }, [])
 
   const removeTransaction = useCallback(async (id: string) => {
@@ -106,6 +150,7 @@ export function DataProvider({ userId, children }: { userId: string; children: R
     setTransactions((list) =>
       list.map((t) => (t.category_id === id ? { ...t, category_id: null } : t)),
     )
+    setRecurring((list) => list.map((r) => (r.category_id === id ? { ...r, category_id: null } : r)))
   }, [])
 
   const saveDeposit = useCallback(
@@ -134,13 +179,13 @@ export function DataProvider({ userId, children }: { userId: string; children: R
 
   const value = useMemo<DataState>(
     () => ({
-      categories, transactions, deposits, settings, loading, error, reload,
-      saveTransaction, removeTransaction, saveCategory, removeCategory,
+      categories, transactions, recurring, deposits, settings, loading, error, reload,
+      saveTransaction, removeTransaction, removeRecurring, saveCategory, removeCategory,
       saveDeposit, removeDeposit, saveSettings, resetAll,
     }),
     [
-      categories, transactions, deposits, settings, loading, error, reload,
-      saveTransaction, removeTransaction, saveCategory, removeCategory,
+      categories, transactions, recurring, deposits, settings, loading, error, reload,
+      saveTransaction, removeTransaction, removeRecurring, saveCategory, removeCategory,
       saveDeposit, removeDeposit, saveSettings, resetAll,
     ],
   )

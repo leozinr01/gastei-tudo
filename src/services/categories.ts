@@ -2,10 +2,14 @@ import { supabase } from '../lib/supabase'
 import type { Category, CategoryInput } from '../types'
 import { requireUserId } from './auth'
 
+function normalize(row: Category): Category {
+  return { ...row, monthly_limit: row.monthly_limit == null ? null : Number(row.monthly_limit) }
+}
+
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await supabase.from('categories').select('*').order('name')
   if (error) throw error
-  return data as Category[]
+  return (data as Category[]).map(normalize)
 }
 
 export async function createCategory(input: CategoryInput): Promise<Category> {
@@ -16,7 +20,7 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
     .select()
     .single()
   if (error) throw error
-  return data as Category
+  return normalize(data as Category)
 }
 
 export async function updateCategory(id: string, input: CategoryInput): Promise<Category> {
@@ -27,7 +31,7 @@ export async function updateCategory(id: string, input: CategoryInput): Promise<
     .select()
     .single()
   if (error) throw error
-  return data as Category
+  return normalize(data as Category)
 }
 
 export async function deleteCategory(id: string): Promise<void> {
