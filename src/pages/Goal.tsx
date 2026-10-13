@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { Flame, History, Loader2, PiggyBank, Plus, Settings as SettingsIcon, Target, Trash2, Trophy } from 'lucide-react'
+import { Flame, History, Loader2, PiggyBank, Plus, Target, Trash2, Trophy } from 'lucide-react'
 import { Button, Card, CardTitle, cx, EmptyState, IconButton, Modal, MoneyInput, PageHeader, useToast } from '../components/ui'
 import { useData } from '../contexts/DataContext'
 import { todayISO, weekdayName } from '../lib/dates'
@@ -164,6 +163,8 @@ export default function GoalPage() {
   // Período escolhido no seletor, esperando a pessoa confirmar o valor da nova meta.
   const [pending, setPending] = useState<GoalPeriod | null>(null)
   const [pendingGoal, setPendingGoal] = useState(0)
+  const [initial, setInitial] = useState(0)
+  const [negative, setNegative] = useState(false)
   const status = useMemo(() => currentGoalStatus(deposits, settings), [deposits, settings])
   const periods = useMemo(() => goalSummaries(deposits, settings), [deposits, settings])
   const streak = goalStreak(periods)
@@ -180,22 +181,37 @@ export default function GoalPage() {
     setPending(next)
   }
 
+  // Ajustar o valor da meta e o saldo inicial, mantendo o período atual.
+  function askValue() {
+    if (changing) return
+    setPendingGoal(status.goal)
+    setInitial(Math.abs(settings.initial_balance))
+    setNegative(settings.initial_balance < 0)
+    setPending(period)
+  }
+
   async function confirmPeriod(e: FormEvent) {
     e.preventDefault()
     if (!pending) return
     setChanging(true)
     try {
-      await saveSettings({ goal_period: pending, weekly_goal: pendingGoal })
+      const adjusting = pending === period
+      await saveSettings({
+        goal_period: pending,
+        weekly_goal: pendingGoal,
+        ...(adjusting ? { initial_balance: negative ? -initial : initial } : {}),
+      })
+      if (adjusting) toast.success('Meta atualizada.')
       setPending(null)
     } catch (err) {
-      toast.error(errorMessage(err, 'Não foi possível mudar o período da meta.'))
+      toast.error(errorMessage(err, 'Não foi possível salvar a meta.'))
     } finally {
       setChanging(false)
     }
   }
 
   let tip: string
-  if (status.goal <= 0) tip = 'Defina um valor de meta em Configurações para acompanhar seu progresso.'
+  if (status.goal <= 0) tip = 'Use "Ajustar meta", logo abaixo, e defina um valor para acompanhar seu progresso.'
   else if (status.hit) tip = `Meta ${text.ofThe} batida. Tudo o que guardar a mais vai direto para a Reserva.`
   else if (period === 'weekly' && status.daysLeft > 0)
     tip = `Para bater a meta, guarde ${formatBRL(status.suggestion)} por dia ${status.daysLeft === 1 ? 'no dia que resta' : `nos ${status.daysLeft} dias que restam`}.`
@@ -221,12 +237,7 @@ export default function GoalPage() {
             <div className="flex items-center gap-5 sm:gap-7">
               <ProgressRing percent={status.percent} hit={status.hit} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="eyebrow">{text.current}</p>
-                  <Link to="/configuracoes" className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-accent hover:underline">
-                    <SettingsIcon className="h-3.5 w-3.5" /> <span className="max-sm:hidden">Ajustar meta</span><span className="sm:hidden">Ajustar</span>
-                  </Link>
-                </div>
+                <p className="eyebrow">{text.current}</p>
                 <p className="mt-2 truncate font-display text-3xl text-neutral-50 sm:text-5xl">{formatBRL(status.saved)}</p>
                 <p className="mt-1.5 text-sm text-neutral-400">de {formatBRL(status.goal)} {text.per}</p>
                 <p className="mt-1 text-xs text-neutral-600">{daily ? formatDate(status.start) : `${formatDayMonth(status.start)} a ${formatDayMonth(status.end)}`}</p>
@@ -244,7 +255,8 @@ export default function GoalPage() {
 
           {/* Guardar + depósitos do período */}
           <Card>
-            <CardTitle eyebrow="Registro" title="Guardar dinheiro" />
+            <CardTitle eyebrow="Registro" title="Guardar dinheiro"
+              action={<Button variant="secondary" className="h-9 shrink-0" icon={<Target className="h-4 w-4" />} onClick={askValue}>Ajustar meta</Button>} />
             <DepositLog key={period} status={status} />
           </Card>
         </div>
@@ -280,16 +292,29 @@ export default function GoalPage() {
         </Card>
       </div>
 
-      <Modal open={Boolean(pending)} onClose={() => setPending(null)} eyebrow="Mudar período" title={pending ? GOAL_PERIODS[pending].title : ''}>
+      <Modal open={Boolean(pending)} onClose={() => setPending(null)} eyebrow={pending === period ? 'Ajustar meta' : 'Mudar período'} title={pending ? GOAL_PERIODS[pending].title : ''}>
         {pending && (
           <form onSubmit={confirmPeriod} className="space-y-4">
             <div>
               <label className="field-label" htmlFor="new-goal">Quanto você quer guardar {GOAL_PERIODS[pending].per}?</label>
               <MoneyInput id="new-goal" value={pendingGoal} onChange={setPendingGoal} autoFocus disabled={changing} />
               <p className="mt-1.5 text-xs text-neutral-600">
-                Hoje sua meta é {formatBRL(status.goal)} {text.per}. O valor acima é o equivalente aproximado; ajuste como quiser.
+                {pending === period
+                  ? 'Vale a partir do período atual. Os períodos já concluídos mantêm a meta que tinham.'
+                  : `Hoje sua meta é ${formatBRL(status.goal)} ${text.per}. O valor acima é o equivalente aproximado; ajuste como quiser.`}
               </p>
             </div>
+            {pending === period && (
+              <div>
+                <label className="field-label" htmlFor="initial">Saldo inicial</label>
+                <MoneyInput id="initial" value={initial} onChange={setInitial} disabled={changing} />
+                <p className="mt-1.5 text-xs text-neutral-600">Quanto você tinha antes da primeira transação registrada aqui.</p>
+                <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-neutral-400">
+                  <input type="checkbox" className="h-4 w-4 accent-red-500" checked={negative} onChange={(e) => setNegative(e.target.checked)} disabled={changing} />
+                  Comecei com saldo negativo
+                </label>
+              </div>
+            )}
             <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
               <Button variant="ghost" onClick={() => setPending(null)} disabled={changing}>Cancelar</Button>
               <Button type="submit" loading={changing}>Salvar</Button>

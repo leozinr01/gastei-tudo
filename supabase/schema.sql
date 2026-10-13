@@ -48,7 +48,9 @@ create table if not exists public.settings (
   -- Valor da meta por período (o nome da coluna vem de quando a meta era só semanal).
   weekly_goal     numeric(12,2) not null default 300 check (weekly_goal >= 0),
   goal_period     text not null default 'weekly' check (goal_period in ('daily', 'weekly', 'biweekly', 'monthly')),
-  initial_balance numeric(12,2) not null default 0
+  initial_balance numeric(12,2) not null default 0,
+  -- Foto de perfil, já reduzida pelo app (imagem pequena guardada como texto).
+  avatar          text check (char_length(avatar) <= 300000)
 );
 
 -- Modelo de uma transação que se repete todo mês, no dia escolhido.
@@ -67,6 +69,7 @@ create table if not exists public.recurring_transactions (
 
 -- Colunas acrescentadas depois da primeira versão (bancos já criados recebem aqui).
 alter table public.categories       add column if not exists monthly_limit numeric(12,2) check (monthly_limit > 0);
+alter table public.settings         add column if not exists avatar text check (char_length(avatar) <= 300000);
 alter table public.settings         add column if not exists goal_period text not null default 'weekly' check (goal_period in ('daily', 'weekly', 'biweekly', 'monthly'));
 alter table public.savings_deposits add column if not exists goal_period_snapshot text check (goal_period_snapshot in ('daily', 'weekly', 'biweekly', 'monthly'));
 -- A transação lançada sozinha aponta para o modelo recorrente de origem.

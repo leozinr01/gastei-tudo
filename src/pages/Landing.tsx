@@ -38,7 +38,7 @@ const STEPS = [
 
 const SECURITY: Array<{ icon: LucideIcon; title: string; text: string }> = [
   { icon: Lock, title: 'Só você vê', text: 'Cada conta enxerga apenas os próprios dados.' },
-  { icon: Download, title: 'Seus dados são seus', text: 'Exporte tudo em um arquivo quando quiser.' },
+  { icon: Download, title: 'Seus dados são seus', text: 'Exporte em planilha ou PDF quando quiser.' },
   { icon: Trash2, title: 'Apague quando quiser', text: 'Um botão remove todas as suas informações.' },
 ]
 

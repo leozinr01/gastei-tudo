@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { GoalPeriod, SavingsDeposit, Settings, Transaction } from '../types'
 import { daysBetween, monthEnd, periodEndOf, periodStartOf, weekStartOf } from './dates'
+import { exportRows, toCsv } from './export'
 import { availableBalance, balanceSeries, goalStreak, goalSummaries, totals } from './finance'
 import { currentGoalStatus } from './goal'
 import { dueDateIn, pendingDueDates } from './recurring'
 
 const settings = (over: Partial<Settings> = {}): Settings => ({
-  user_id: 'u', weekly_goal: 300, goal_period: 'weekly', initial_balance: 0, ...over,
+  user_id: 'u', weekly_goal: 300, goal_period: 'weekly', initial_balance: 0, avatar: null, ...over,
 })
 
 let seq = 0
@@ -135,6 +136,36 @@ describe('meta', () => {
     expect(goalStreak([period(true), period(false), period(true, true)])).toBe(1)
     expect(goalStreak([period(true), period(false)])).toBe(0)
     expect(goalStreak([])).toBe(0)
+  })
+})
+
+describe('exportação', () => {
+  const categories = [{ id: 'c1', user_id: 'u', name: 'Mercado', type: 'expense' as const, color: '#fff', monthly_limit: null, created_at: '' }]
+  const transactions = [
+    tx('income', 1000, '2026-10-01'),
+    { ...tx('expense', 1250.5, '2026-10-03'), category_id: 'c1', description: 'Compra; do "mês"' },
+    { ...tx('expense', 10, '2026-10-02'), description: '=SOMA(A1)' },
+  ]
+  const rows = exportRows(transactions, [dep('2026-10-04', 100)], categories)
+
+  it('junta transações e depósitos, do mais recente para o mais antigo, com sinal no valor', () => {
+    expect(rows.map((r) => [r.date, r.kind, r.category, r.amount])).toEqual([
+      ['2026-10-04', 'Guardado na meta', '', -100],
+      ['2026-10-03', 'Saída', 'Mercado', -1250.5],
+      ['2026-10-02', 'Saída', 'Sem categoria', -10],
+      ['2026-10-01', 'Entrada', 'Sem categoria', 1000],
+    ])
+  })
+
+  it('gera a planilha com ponto e vírgula, vírgula decimal e texto protegido', () => {
+    const lines = toCsv(rows).replace('﻿', '').trimEnd().split('\r\n')
+    expect(lines).toEqual([
+      'Data;Tipo;Descrição;Categoria;Valor (R$)',
+      '04/10/2026;Guardado na meta;Reserva;;-100,00',
+      '03/10/2026;Saída;"Compra; do ""mês""";Mercado;-1.250,50',
+      "02/10/2026;Saída;'=SOMA(A1);Sem categoria;-10,00",
+      '01/10/2026;Entrada;;Sem categoria;1.000,00',
+    ])
   })
 })
 

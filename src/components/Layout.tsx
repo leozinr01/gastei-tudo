@@ -26,7 +26,7 @@ function readSidebarOpen(): boolean {
 }
 
 export default function Layout() {
-  const { loading, error, reload } = useData()
+  const { loading, error, reload, settings } = useData()
   const { user } = useAuth()
   const toast = useToast()
   const [leaving, setLeaving] = useState(false)
@@ -126,8 +126,8 @@ export default function Layout() {
           </button>
           {/* A inicial leva aos ajustes da conta. */}
           <Link to="/configuracoes" aria-label="Abrir ajustes da conta"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold uppercase text-brand">
-            {firstName ? firstName[0] : <Settings className="h-4 w-4" />}
+            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand/10 text-sm font-semibold uppercase text-brand">
+            {settings.avatar ? <img src={settings.avatar} alt="" className="h-full w-full object-cover" /> : firstName ? firstName[0] : <Settings className="h-4 w-4" />}
           </Link>
         </div>
       </header>
@@ -137,8 +137,8 @@ export default function Layout() {
         {firstName && (
           <div className="hidden items-center justify-end gap-3 border-b border-line px-8 py-3 md:flex">
             <p className="truncate text-sm text-neutral-400">Olá, <span className="font-medium text-neutral-100">{firstName}</span></p>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold uppercase text-brand" aria-hidden>
-              {firstName[0]}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand/10 text-xs font-semibold uppercase text-brand" aria-hidden>
+              {settings.avatar ? <img src={settings.avatar} alt="" className="h-full w-full object-cover" /> : firstName[0]}
             </div>
           </div>
         )}

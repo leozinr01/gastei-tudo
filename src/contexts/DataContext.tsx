@@ -52,6 +52,7 @@ export function DataProvider({ userId, children }: { userId: string; children: R
     weekly_goal: 300,
     goal_period: 'weekly',
     initial_balance: 0,
+    avatar: null,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

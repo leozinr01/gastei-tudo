@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { Pencil, Plus, Tags, Trash2, X } from 'lucide-react'
+import { ChevronDown, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useData } from '../contexts/DataContext'
 import { errorMessage } from '../lib/errors'
 import type { Category, TransactionType } from '../types'
 import { formatBRL } from '../lib/format'
-import { Button, ConfirmDialog, EmptyState, IconButton, MoneyInput, useToast } from './ui'
+import { Button, ConfirmDialog, cx, IconButton, MoneyInput, useToast } from './ui'
 
 const SWATCHES = ['#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#a3a3a3']
 
@@ -19,6 +19,8 @@ export default function CategoryManager() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [toDelete, setToDelete] = useState<Category | null>(null)
+  // Qual lista está aberta (Saídas ou Entradas); sempre fica uma.
+  const [open, setOpen] = useState<TransactionType>('expense')
   const [deleting, setDeleting] = useState(false)
 
   function reset() {
@@ -50,6 +52,7 @@ export default function CategoryManager() {
     try {
       await saveCategory({ name: trimmed, type, color, monthly_limit: type === 'expense' && limit > 0 ? limit : null }, editingId ?? undefined)
       toast.success(editingId ? 'Categoria atualizada.' : 'Categoria criada.')
+      setOpen(type)
       reset()
     } catch (err) {
       toast.error(errorMessage(err, 'Não foi possível salvar a categoria.'))
@@ -75,11 +78,14 @@ export default function CategoryManager() {
 
   const used = toDelete ? transactions.filter((t) => t.category_id === toDelete.id).length : 0
 
+  const shown = categories.filter((c) => c.type === open)
+
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="rounded-xl border border-line bg-bg p-4" noValidate>
-        <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
-          <div>
+    <div className="@container">
+      <div className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="rounded-xl border border-line bg-bg p-3" noValidate>
+        <div className="grid grid-cols-2 gap-2.5 @lg:grid-cols-[minmax(0,1fr)_7.5rem_10rem]">
+          <div className="col-span-2 @lg:col-span-1">
             <label className="field-label" htmlFor="cat-name">{editingId ? 'Editar categoria' : 'Nova categoria'}</label>
             <input id="cat-name" className="field bg-card" maxLength={40} placeholder="Nome" value={name}
               onChange={(e) => { setName(e.target.value); setError('') }} />
@@ -91,44 +97,56 @@ export default function CategoryManager() {
               <option value="income">Entrada</option>
             </select>
           </div>
-        </div>
-        {type === 'expense' && (
-          <div className="mt-3">
-            <label className="field-label" htmlFor="cat-limit">Limite por mês (opcional)</label>
-            <MoneyInput id="cat-limit" value={limit} onChange={setLimit} />
-            <p className="mt-1.5 text-xs text-neutral-600">Deixe em 0,00 para não ter limite. O Dashboard mostra quanto do limite já foi gasto no mês.</p>
-          </div>
-        )}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {SWATCHES.map((s) => (
-            <button key={s} type="button" aria-label={`Cor ${s}`} aria-pressed={color === s} onClick={() => setColor(s)}
-              className="h-7 w-7 rounded-full border-2 transition"
-              style={{ background: s, borderColor: color === s ? '#fff' : 'transparent' }} />
-          ))}
-          <label className="relative flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 text-xs text-neutral-400">
-            <span className="h-3 w-3 rounded-full" style={{ background: color }} /> Outra
-            <input type="color" className="absolute inset-0 cursor-pointer opacity-0" value={color} onChange={(e) => setColor(e.target.value)} />
-          </label>
+          {type === 'expense' && (
+            <div>
+              <label className="field-label" htmlFor="cat-limit" title="Deixe em 0,00 para não ter limite.">Limite por mês</label>
+              <MoneyInput id="cat-limit" value={limit} onChange={setLimit} />
+            </div>
+          )}
         </div>
         {error && <p className="mt-2 text-xs text-danger">{error}</p>}
-        <div className="mt-4 flex gap-2">
-          <Button type="submit" loading={saving} icon={editingId ? undefined : <Plus className="h-4 w-4" />} className="h-10">
-            {editingId ? 'Salvar' : 'Criar categoria'}
-          </Button>
-          {editingId && <Button variant="ghost" className="h-10" onClick={reset} icon={<X className="h-4 w-4" />}>Cancelar</Button>}
+        <div className="mt-3 flex flex-col gap-3 @lg:flex-row @lg:items-center @lg:gap-4">
+          <div className="flex flex-1 flex-wrap items-center gap-1.5">
+            {SWATCHES.map((s) => (
+              <button key={s} type="button" aria-label={`Cor ${s}`} aria-pressed={color === s} onClick={() => setColor(s)}
+                className="h-6 w-6 rounded-full border-2 transition"
+                style={{ background: s, borderColor: color === s ? '#fff' : 'transparent' }} />
+            ))}
+            <label className="relative flex h-6 cursor-pointer items-center gap-1.5 rounded-full border border-line px-2 text-xs text-neutral-400">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} /> Outra
+              <input type="color" className="absolute inset-0 cursor-pointer opacity-0" value={color} onChange={(e) => setColor(e.target.value)} />
+            </label>
+          </div>
+          <div className="flex gap-2">
+            {editingId && <Button variant="ghost" className="h-9" onClick={reset} icon={<X className="h-4 w-4" />}>Cancelar</Button>}
+            <Button type="submit" loading={saving} icon={editingId ? undefined : <Plus className="h-4 w-4" />} className="h-9 flex-1 @lg:flex-none">
+              {editingId ? 'Salvar' : 'Criar categoria'}
+            </Button>
+          </div>
         </div>
       </form>
 
-      {categories.length === 0 ? (
-        <EmptyState icon={<Tags className="h-5 w-5" />} title="Nenhuma categoria" text="Crie a primeira categoria para organizar suas transações." />
-      ) : (
-        <div className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+      <div>
+        <div className="grid grid-cols-2 gap-2">
           {(['expense', 'income'] as const).map((t) => (
-            <div key={t}>
-              <p className="mb-2 text-xs font-medium text-neutral-500">{t === 'expense' ? 'Saídas' : 'Entradas'}</p>
+            <button key={t} type="button" aria-pressed={open === t} onClick={() => setOpen(t)}
+              className={cx('flex h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition',
+                open === t ? 'border-accent bg-accent text-black' : 'border-line bg-bg text-neutral-300 hover:text-neutral-100')}>
+              {t === 'expense' ? 'Saídas' : 'Entradas'}
+              <span className={cx('font-normal', open === t ? 'text-black/60' : 'text-neutral-500')}>{categories.filter((c) => c.type === t).length}</span>
+              <ChevronDown className={cx('ml-auto h-4 w-4 shrink-0 transition-transform', open === t ? 'rotate-180 text-black/70' : 'text-neutral-500')} />
+            </button>
+          ))}
+        </div>
+
+        {(
+          <div className="mt-2 rounded-xl border border-line bg-bg">
+            {shown.length === 0 ? (
+              <p className="px-4 py-4 text-sm text-neutral-500">Nenhuma categoria de {open === 'expense' ? 'saída' : 'entrada'} ainda.</p>
+            ) : (
               <ul className="divide-y divide-line">
-                {categories.filter((c) => c.type === t).map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 py-2">
+                {shown.map((c) => (
+                  <li key={c.id} className="flex items-center gap-3 py-1 pl-4 pr-2">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: c.color }} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-neutral-200">{c.name}</span>
@@ -139,10 +157,11 @@ export default function CategoryManager() {
                   </li>
                 ))}
               </ul>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
+      </div>
 
       <ConfirmDialog
         open={Boolean(toDelete)}

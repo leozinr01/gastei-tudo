@@ -60,6 +60,8 @@ export interface Settings {
   weekly_goal: number
   goal_period: GoalPeriod
   initial_balance: number
+  /** Foto de perfil já reduzida (imagem pequena em texto); sem valor = mostra a inicial do nome */
+  avatar: string | null
 }
 
 export type CategoryInput = Pick<Category, 'name' | 'color' | 'type' | 'monthly_limit'>
@@ -72,7 +74,7 @@ export type TransactionInput = Pick<
   Transaction,
   'type' | 'amount' | 'description' | 'category_id' | 'date'
 >
-export type SettingsInput = Partial<Pick<Settings, 'weekly_goal' | 'goal_period' | 'initial_balance'>>
+export type SettingsInput = Partial<Pick<Settings, 'weekly_goal' | 'goal_period' | 'initial_balance' | 'avatar'>>
 
 export interface Period {
   from: string
