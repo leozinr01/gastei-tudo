@@ -11,11 +11,18 @@ import type { Category, Transaction } from '../types'
 
 const PAGE_SIZE = 50
 
+const TYPES: Array<{ id: Transaction['type']; label: string; icon: typeof ArrowDownLeft; active: string }> = [
+  { id: 'income', label: 'Entradas', icon: ArrowDownLeft, active: 'bg-brand/15 text-brand' },
+  { id: 'expense', label: 'Saídas', icon: ArrowUpRight, active: 'bg-danger/15 text-danger' },
+]
+
 /** Uma coluna da página: só entradas ou só saídas, com o total no cabeçalho. */
-function TransactionColumn({ type, items, total, categoryById, onEdit, onDelete }: {
+function TransactionColumn({ type, items, total, filtered, categoryById, onEdit, onDelete }: {
   type: Transaction['type']
   items: Transaction[]
   total: number
+  /** Há busca, categoria ou datas escolhidas: muda o texto de lista vazia. */
+  filtered: boolean
   categoryById: Map<string, Category>
   onEdit: (t: Transaction) => void
   onDelete: (t: Transaction) => void
@@ -36,7 +43,7 @@ function TransactionColumn({ type, items, total, categoryById, onEdit, onDelete 
         <span className={cx('shrink-0 text-base font-semibold', income ? 'text-brand' : 'text-danger')}>{formatBRL(total)}</span>
       </div>
       {items.length === 0 ? (
-        <p className="px-4 py-10 text-center text-sm text-neutral-500 sm:px-6">{income ? 'Nenhuma entrada por aqui.' : 'Nenhuma saída por aqui.'}</p>
+        <p className="px-4 py-10 text-center text-sm text-neutral-500 sm:px-6">{filtered ? `Nenhuma ${income ? 'entrada' : 'saída'} combina com os filtros.` : income ? 'Nenhuma entrada registrada ainda.' : 'Nenhuma saída registrada ainda.'}</p>
       ) : (
         <>
           <ul className="divide-y divide-line">
@@ -79,7 +86,7 @@ export default function TransactionsPage() {
   const { transactions, categories, removeTransaction } = useData()
   const toast = useToast()
   const [search, setSearch] = useState('')
-  const [type, setType] = useState('')
+  const [type, setType] = useState<Transaction['type']>('income')
   const [categoryId, setCategoryId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -96,20 +103,32 @@ export default function TransactionsPage() {
     return transactions.filter(
       (t) =>
         (!q || t.description.toLowerCase().includes(q)) &&
-        (!type || t.type === type) &&
         (!categoryId || (categoryId === 'none' ? !t.category_id : t.category_id === categoryId)) &&
         (!from || t.date >= from) &&
         (!to || t.date <= to),
     )
-  }, [transactions, search, type, categoryId, from, to])
+  }, [transactions, search, categoryId, from, to])
 
   const sum = totals(filtered)
   const incomes = useMemo(() => filtered.filter((t) => t.type === 'income'), [filtered])
   const expenses = useMemo(() => filtered.filter((t) => t.type === 'expense'), [filtered])
-  const hasFilters = Boolean(search || type || categoryId || from || to)
+  const hasFilters = Boolean(search || categoryId || from || to)
 
   function clearFilters() {
-    setSearch(''); setType(''); setCategoryId(''); setFrom(''); setTo('')
+    setSearch(''); setCategoryId(''); setFrom(''); setTo('')
+  }
+
+  // No celular só um tipo aparece por vez, então a aba acompanha a categoria escolhida.
+  function changeCategory(id: string) {
+    setCategoryId(id)
+    const cat = categoryById.get(id)
+    if (cat) setType(cat.type)
+  }
+
+  function changeType(next: Transaction['type']) {
+    setType(next)
+    const cat = categoryById.get(categoryId)
+    if (cat && cat.type !== next) setCategoryId('')
   }
 
   function openNew() { setEditing(null); setFormOpen(true) }
@@ -136,33 +155,35 @@ export default function TransactionsPage() {
         <Button icon={<Plus className="h-4 w-4" />} onClick={openNew}>Nova transação</Button>
       </PageHeader>
 
+      {/* Só no celular: escolhe ver entradas ou saídas. Em telas largas as duas ficam lado a lado. */}
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-line bg-card p-1 lg:hidden" role="group" aria-label="Tipo de transação">
+        {TYPES.map(({ id, label, icon: Icon, active }) => (
+          <button key={id} type="button" aria-pressed={type === id} onClick={() => changeType(id)}
+            className={cx('flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition', type === id ? active : 'text-neutral-400 hover:text-neutral-100')}>
+            <Icon className="h-4 w-4" /> {label}
+          </button>
+        ))}
+      </div>
+
       <Card className="mb-4 !p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
-          <div className="relative sm:col-span-2 lg:col-span-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+          <div className="relative col-span-2 lg:col-span-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-600" />
             <input className="field pl-10" placeholder="Buscar por descrição" aria-label="Buscar por descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <select className="field" aria-label="Tipo" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Todos os tipos</option>
-            <option value="income">Entradas</option>
-            <option value="expense">Saídas</option>
-          </select>
-          <select className="field" aria-label="Categoria" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <select className="field col-span-2 lg:col-span-1" aria-label="Categoria" value={categoryId} onChange={(e) => changeCategory(e.target.value)}>
             <option value="">Todas as categorias</option>
-            {categories.filter((c) => !type || c.type === type).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}{type ? '' : c.type === 'income' ? ' (entrada)' : ' (saída)'}</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.type === 'income' ? 'entrada' : 'saída'})</option>
             ))}
             <option value="none">Sem categoria</option>
           </select>
           <input type="date" className="field" aria-label="A partir de" title="A partir de" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
           <input type="date" className="field" aria-label="Até" title="Até" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
         </div>
-        {transactions.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-neutral-500">
-            <span>{filtered.length} {filtered.length === 1 ? 'transação' : 'transações'}</span>
-            <span>Entradas <b className="font-medium text-brand">{formatBRL(sum.income)}</b></span>
-            <span>Saídas <b className="font-medium text-danger">{formatBRL(sum.expense)}</b></span>
-            {hasFilters && <button type="button" className="ml-auto text-accent hover:underline" onClick={clearFilters}>Limpar filtros</button>}
+        {hasFilters && (
+          <div className="mt-3 text-right text-xs">
+            <button type="button" className="text-accent hover:underline" onClick={clearFilters}>Limpar filtros</button>
           </div>
         )}
       </Card>
@@ -173,20 +194,14 @@ export default function TransactionsPage() {
             text="Registre sua primeira entrada ou saída para começar a acompanhar seu dinheiro."
             action={<Button icon={<Plus className="h-4 w-4" />} onClick={openNew}>Nova transação</Button>} />
         </Card>
-      ) : filtered.length === 0 ? (
-        <Card className="!p-0">
-          <EmptyState icon={<Search className="h-5 w-5" />} title="Nada encontrado"
-            text="Nenhuma transação combina com os filtros escolhidos."
-            action={<Button variant="secondary" onClick={clearFilters}>Limpar filtros</Button>} />
-        </Card>
       ) : (
-        <div className={cx('grid items-start gap-4', !type && 'lg:grid-cols-2')}>
-          {type !== 'expense' && (
-            <TransactionColumn type="income" items={incomes} total={sum.income} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
-          )}
-          {type !== 'income' && (
-            <TransactionColumn type="expense" items={expenses} total={sum.expense} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
-          )}
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+          <div className={cx(type !== 'income' && 'max-lg:hidden')}>
+            <TransactionColumn type="income" items={incomes} total={sum.income} filtered={hasFilters} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
+          </div>
+          <div className={cx(type !== 'expense' && 'max-lg:hidden')}>
+            <TransactionColumn type="expense" items={expenses} total={sum.expense} filtered={hasFilters} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
+          </div>
         </div>
       )}
 

@@ -16,8 +16,6 @@ export interface GoalPeriodText {
   ofThe: string
   /** "por semana" */
   per: string
-  /** "até sábado" */
-  until: string
   /** ["semana", "semanas"] */
   unit: [string, string]
   /** "Semanas anteriores" */
@@ -31,22 +29,22 @@ export interface GoalPeriodText {
 export const GOAL_PERIODS: Record<GoalPeriod, GoalPeriodText> = {
   daily: {
     label: 'Diária', title: 'Meta diária', current: 'Hoje', inCurrent: 'hoje', ofThe: 'do dia', per: 'por dia',
-    until: 'hoje', unit: ['dia', 'dias'], past: 'Dias anteriores', streakHint: 'Dias seguidos batendo a meta',
+    unit: ['dia', 'dias'], past: 'Dias anteriores', streakHint: 'Dias seguidos batendo a meta',
     range: 'Um valor para cada dia',
   },
   weekly: {
     label: 'Semanal', title: 'Meta semanal', current: 'Esta semana', inCurrent: 'nesta semana', ofThe: 'da semana', per: 'por semana',
-    until: 'até sábado', unit: ['semana', 'semanas'], past: 'Semanas anteriores', streakHint: 'Semanas seguidas batendo a meta',
+    unit: ['semana', 'semanas'], past: 'Semanas anteriores', streakHint: 'Semanas seguidas batendo a meta',
     range: 'Domingo a sábado',
   },
   biweekly: {
     label: 'Quinzenal', title: 'Meta quinzenal', current: 'Esta quinzena', inCurrent: 'nesta quinzena', ofThe: 'da quinzena', per: 'por quinzena',
-    until: 'até o fim da quinzena', unit: ['quinzena', 'quinzenas'], past: 'Quinzenas anteriores', streakHint: 'Quinzenas seguidas batendo a meta',
+    unit: ['quinzena', 'quinzenas'], past: 'Quinzenas anteriores', streakHint: 'Quinzenas seguidas batendo a meta',
     range: 'Do dia 1 ao 15 e do 16 ao fim do mês',
   },
   monthly: {
     label: 'Mensal', title: 'Meta mensal', current: 'Este mês', inCurrent: 'neste mês', ofThe: 'do mês', per: 'por mês',
-    until: 'até o fim do mês', unit: ['mês', 'meses'], past: 'Meses anteriores', streakHint: 'Meses seguidos batendo a meta',
+    unit: ['mês', 'meses'], past: 'Meses anteriores', streakHint: 'Meses seguidos batendo a meta',
     range: 'Do dia 1 ao fim do mês',
   },
 }

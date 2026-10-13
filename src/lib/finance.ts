@@ -1,6 +1,6 @@
 import type { Period, SavingsDeposit, Settings, Transaction } from '../types'
 import {
-  addDays, monthKey, monthsBetween, periodEndOf, periodStartOf, todayISO,
+  addDays, periodEndOf, periodStartOf, todayISO,
 } from './dates'
 import { round2 } from './format'
 
@@ -67,55 +67,6 @@ export function balanceSeries(
     if (points.length > 1100) break // proteção contra intervalos absurdos
   }
   return points
-}
-
-export interface MonthRow {
-  month: string
-  income: number
-  expense: number
-  saved: number
-  result: number
-  balance: number
-}
-
-/** Fluxo de caixa mês a mês, do primeiro lançamento até o mês atual. */
-export function monthlyFlow(
-  settings: Settings,
-  transactions: Transaction[],
-  deposits: SavingsDeposit[],
-): MonthRow[] {
-  const current = monthKey(todayISO())
-  let first = current
-  let last = current
-  for (const i of [...transactions, ...deposits]) {
-    const m = monthKey(i.date)
-    if (m < first) first = m
-    if (m > last) last = m
-  }
-
-  const rows = new Map<string, MonthRow>()
-  for (const m of monthsBetween(first, last)) {
-    rows.set(m, { month: m, income: 0, expense: 0, saved: 0, result: 0, balance: 0 })
-  }
-  for (const t of transactions) {
-    const r = rows.get(monthKey(t.date))!
-    if (t.type === 'income') r.income += t.amount
-    else r.expense += t.amount
-  }
-  for (const d of deposits) rows.get(monthKey(d.date))!.saved += d.amount
-
-  let balance = settings.initial_balance
-  const out: MonthRow[] = []
-  for (const r of rows.values()) {
-    r.income = round2(r.income)
-    r.expense = round2(r.expense)
-    r.saved = round2(r.saved)
-    r.result = round2(r.income - r.expense)
-    balance = round2(balance + r.result - r.saved)
-    r.balance = balance
-    out.push(r)
-  }
-  return out
 }
 
 export interface GoalSummary {

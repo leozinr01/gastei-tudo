@@ -202,8 +202,8 @@ function DepositLog({ status }: { status: GoalStatus }) {
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
-    <Card className="flex items-center gap-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">{icon}</div>
+    <Card className="flex items-center gap-4 max-sm:!p-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand max-sm:hidden">{icon}</div>
       <div className="min-w-0">
         <p className="eyebrow">{label}</p>
         <p className="mt-1 truncate font-display text-2xl text-neutral-50">{value}</p>
@@ -291,7 +291,7 @@ export default function GoalPage() {
           </p>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
           <Stat icon={<PiggyBank className="h-5 w-5" />} label="Reserva" value={formatBRL(totalSaved)} hint="Total guardado desde o início" />
           <Stat icon={<Flame className="h-5 w-5" />} label="Sequência" value={`${streak} ${text.unit[streak === 1 ? 0 : 1]}`} hint={text.streakHint} />
         </div>
