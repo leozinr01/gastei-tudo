@@ -115,11 +115,21 @@ export default function Layout() {
           <p className="text-xs text-neutral-500">Bem-vindo de volta</p>
           <p className="truncate font-display text-xl leading-tight text-neutral-50">{firstName ? `Olá, ${firstName}` : 'Gastei Tudo'}</p>
         </div>
-        {/* No celular, sair da conta fica em Ajustes; a inicial leva até lá. */}
-        <Link to="/configuracoes" aria-label="Abrir ajustes da conta"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold uppercase text-brand">
-          {firstName ? firstName[0] : <Settings className="h-4 w-4" />}
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={leaving}
+            className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-neutral-400 hover:text-danger disabled:opacity-50"
+          >
+            <LogOut className="h-4 w-4" /> Sair
+          </button>
+          {/* A inicial leva aos ajustes da conta. */}
+          <Link to="/configuracoes" aria-label="Abrir ajustes da conta"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold uppercase text-brand">
+            {firstName ? firstName[0] : <Settings className="h-4 w-4" />}
+          </Link>
+        </div>
       </header>
 
       <div className={cx('transition-[padding] duration-200', open ? 'md:pl-56' : 'md:pl-[72px]')}>
