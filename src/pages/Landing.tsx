@@ -49,8 +49,10 @@ const INSTALL: Record<Platform, { title: string; steps: string[] }> = {
     title: 'Instalar no iPhone',
     steps: [
       'Abra o Gastei Tudo no Safari.',
-      'Toque em Compartilhar, o quadrado com a seta para cima.',
-      'Role a lista e toque em "Adicionar à Tela de Início".',
+      'Toque nos três pontinhos (…).',
+      'Toque em "Compartilhar".',
+      'Role a lista e toque em "Ver mais".',
+      'Toque em "Adicionar à Tela de Início".',
       'Toque em "Adicionar". O ícone aparece junto dos seus apps.',
     ],
   },
