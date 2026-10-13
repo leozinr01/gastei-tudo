@@ -10,52 +10,61 @@ function AuthShell({ eyebrow, title, subtitle, children, footer }: {
   eyebrow: string; title: string; subtitle: string; children: ReactNode; footer?: ReactNode
 }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
-      {/* Painel da marca (desktop) */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-line p-12 lg:flex">
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_80%_70%_at_30%_20%,black,transparent)]" />
-          <div className="absolute -left-24 -top-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-          <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-brand/10 blur-3xl" />
+    <div className="flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="flex h-16 w-full items-center justify-between gap-2 px-4 sm:gap-4 sm:px-8 lg:px-12">
+          <Link to="/" aria-label="Gastei Tudo — voltar à página inicial"><Brand /></Link>
+          <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
+            <Link to="/login" className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-neutral-200 transition hover:text-white sm:px-3.5">Entrar</Link>
+            <Link to="/cadastro" className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-accent px-3.5 text-sm font-semibold text-black transition hover:bg-yellow-400 sm:h-10 sm:px-5">Criar conta</Link>
+          </nav>
         </div>
-        <Link to="/" className="relative"><Brand /></Link>
-        <div className="relative">
-          <h2 className="font-serif text-5xl leading-[1.08] text-neutral-50">
-            Gastei tudo. <span className="block italic text-accent">Mas em quê?</span>
-          </h2>
-          <ul className="mt-8 space-y-3.5 text-sm text-neutral-300">
-            {BENEFITS.map((benefit) => (
-              <li key={benefit} className="flex items-center gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                </span>
-                {benefit}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="relative rounded-2xl border border-line bg-card/80 p-5 backdrop-blur-sm" aria-hidden>
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold uppercase tracking-[0.14em] text-neutral-500">Meta da semana · exemplo</span>
-            <span className="font-semibold text-accent">72%</span>
+      </header>
+      <div className="grid flex-1 lg:grid-cols-[1.05fr_1fr]">
+        {/* Painel da marca (desktop) */}
+        <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-line p-12 lg:flex">
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_80%_70%_at_30%_20%,black,transparent)]" />
+            <div className="absolute -left-24 -top-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+            <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-brand/10 blur-3xl" />
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
-            <div className="h-full w-[72%] rounded-full bg-accent" />
+          <div className="relative">
+            <h2 className="font-display text-5xl leading-[1.08] text-neutral-50">
+              Gastei tudo. <span className="block text-accent">Mas em quê?</span>
+            </h2>
+            <ul className="mt-8 space-y-3.5 text-sm text-neutral-300">
+              {BENEFITS.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                  {benefit}
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="mt-3 text-sm text-neutral-400"><span className="font-semibold text-neutral-100">R$ 180</span> de R$ 250 guardados</p>
-        </div>
-      </aside>
+          <div className="relative rounded-2xl border border-line bg-card/80 p-5 backdrop-blur-sm" aria-hidden>
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold uppercase tracking-[0.14em] text-neutral-500">Meta da semana · exemplo</span>
+              <span className="font-semibold text-accent">72%</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
+              <div className="h-full w-[72%] rounded-full bg-accent" />
+            </div>
+            <p className="mt-3 text-sm text-neutral-400"><span className="font-semibold text-neutral-100">R$ 180</span> de R$ 250 guardados</p>
+          </div>
+        </aside>
 
-      <main className="flex items-center justify-center px-4 py-10 sm:px-8">
-        <div className="animate-fade-in w-full max-w-sm">
-          <Link to="/" className="mb-10 inline-block lg:hidden"><Brand /></Link>
-          <p className="eyebrow mb-2">{eyebrow}</p>
-          <h1 className="font-serif text-4xl text-neutral-50">{title}</h1>
-          <p className="mt-2.5 text-sm leading-relaxed text-neutral-400">{subtitle}</p>
-          <div className="mt-8">{children}</div>
-          {footer && <div className="mt-8 border-t border-line pt-6 text-center text-sm text-neutral-500">{footer}</div>}
-        </div>
-      </main>
+        <main className="flex items-center justify-center px-4 py-10 sm:px-8">
+          <div className="animate-fade-in w-full max-w-sm">
+            <p className="eyebrow mb-2">{eyebrow}</p>
+            <h1 className="font-display text-4xl text-neutral-50">{title}</h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-neutral-400">{subtitle}</p>
+            <div className="mt-8">{children}</div>
+            {footer && <div className="mt-8 border-t border-line pt-6 text-center text-sm text-neutral-500">{footer}</div>}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
@@ -72,7 +81,7 @@ function Brand() {
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
         <TrendingUp className="h-4 w-4" />
       </span>
-      <span className="font-serif text-lg text-neutral-50">Gastei Tudo</span>
+      <span className="font-display text-lg text-neutral-50">Gastei Tudo</span>
     </span>
   )
 }
@@ -104,7 +113,7 @@ function Notice({ title, text }: { title: string; text: string }) {
   return (
     <div className="flex flex-col items-center py-2 text-center">
       <MailCheck className="mb-3 h-8 w-8 text-brand" />
-      <p className="font-serif text-lg text-neutral-50">{title}</p>
+      <p className="font-display text-lg text-neutral-50">{title}</p>
       <p className="mt-1 text-sm text-neutral-400">{text}</p>
     </div>
   )

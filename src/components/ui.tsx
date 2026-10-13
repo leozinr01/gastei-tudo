@@ -23,7 +23,7 @@ export function CardTitle({ eyebrow, title, action }: { eyebrow?: string; title:
     <div className="mb-5 flex items-start justify-between gap-3">
       <div>
         {eyebrow && <p className="eyebrow mb-1">{eyebrow}</p>}
-        <h2 className="font-serif text-xl text-neutral-50">{title}</h2>
+        <h2 className="font-display text-xl text-neutral-50">{title}</h2>
       </div>
       {action}
     </div>
@@ -35,7 +35,7 @@ export function PageHeader({ eyebrow, title, children }: { eyebrow: string; titl
     <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="eyebrow mb-1.5">{eyebrow}</p>
-        <h1 className="font-serif text-3xl text-neutral-50 sm:text-4xl">{title}</h1>
+        <h1 className="font-display text-3xl text-neutral-50 sm:text-4xl">{title}</h1>
       </div>
       {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
     </header>
@@ -148,7 +148,7 @@ export function EmptyState({ icon, title, text, action }: { icon: ReactNode; tit
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-bg text-neutral-500">
         {icon}
       </div>
-      <p className="font-serif text-lg text-neutral-100">{title}</p>
+      <p className="font-display text-lg text-neutral-100">{title}</p>
       <p className="mt-1 max-w-xs text-sm text-neutral-500">{text}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -187,7 +187,7 @@ export function Modal({ open, title, eyebrow, onClose, children }: { open: boole
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             {eyebrow && <p className="eyebrow mb-1">{eyebrow}</p>}
-            <h2 className="font-serif text-2xl text-neutral-50">{title}</h2>
+            <h2 className="font-display text-2xl text-neutral-50">{title}</h2>
           </div>
           <IconButton label="Fechar" onClick={onClose}><X className="h-5 w-5" /></IconButton>
         </div>

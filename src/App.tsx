@@ -38,7 +38,7 @@ function SetupNotice() {
     <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="max-w-md rounded-2xl border border-line bg-card p-6">
         <p className="eyebrow mb-1.5">Configuração</p>
-        <h1 className="font-serif text-2xl text-neutral-50">Falta conectar o Supabase</h1>
+        <h1 className="font-display text-2xl text-neutral-50">Falta conectar o Supabase</h1>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
           Copie o arquivo <code className="text-neutral-200">.env.example</code> para{' '}
           <code className="text-neutral-200">.env</code>, preencha{' '}

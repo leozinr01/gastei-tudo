@@ -68,7 +68,7 @@ export default function Layout() {
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
             <TrendingUp className="h-5 w-5" />
           </div>
-          {open && <span className="truncate font-serif text-lg text-neutral-50">Gastei Tudo</span>}
+          {open && <span className="truncate font-display text-lg text-neutral-50">Gastei Tudo</span>}
         </div>
         <button
           type="button"
@@ -111,12 +111,12 @@ export default function Layout() {
       </aside>
 
       {/* Topo (celular) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/90 px-4 py-3 backdrop-blur-sm md:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/90 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-sm md:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
             <TrendingUp className="h-4 w-4" />
           </div>
-          <span className="truncate font-serif text-lg text-neutral-50">{firstName ? `Olá, ${firstName}` : 'Gastei Tudo'}</span>
+          <span className="truncate font-display text-lg text-neutral-50">{firstName ? `Olá, ${firstName}` : 'Gastei Tudo'}</span>
         </div>
         <button
           type="button"

@@ -96,7 +96,7 @@ export default function CashFlowPage() {
         <div className="flex flex-col gap-3 px-5 pt-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:pt-6">
           <div>
             <p className="eyebrow mb-1">Dia a dia</p>
-            <h2 className="font-serif text-xl text-neutral-50">{monthLongLabel(month)}</h2>
+            <h2 className="font-display text-xl text-neutral-50">{monthLongLabel(month)}</h2>
           </div>
           <select className="field h-10 w-auto" aria-label="Mês" value={month} onChange={(e) => setSelected(e.target.value)}>
             {newestFirst.map((m) => <option key={m.month} value={m.month}>{monthLongLabel(m.month)}</option>)}

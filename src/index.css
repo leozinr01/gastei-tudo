@@ -8,8 +8,8 @@
   --color-accent: #eab308;
   --color-danger: #ef4444;
 
-  --font-serif: 'Fraunces', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Geist', system-ui, sans-serif;
+  --font-sans: 'Geist', system-ui, sans-serif;
 }
 
 @layer base {
@@ -48,6 +48,10 @@
 }
 
 @layer components {
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
   .field {
     @apply h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-sm text-neutral-100 outline-hidden transition placeholder:text-neutral-600 focus:border-brand/60 focus:ring-2 focus:ring-brand/15 disabled:opacity-50;
   }

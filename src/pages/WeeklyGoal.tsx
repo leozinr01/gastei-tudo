@@ -117,7 +117,7 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">{icon}</div>
       <div className="min-w-0">
         <p className="eyebrow">{label}</p>
-        <p className="mt-1 truncate font-serif text-2xl text-neutral-50">{value}</p>
+        <p className="mt-1 truncate font-display text-2xl text-neutral-50">{value}</p>
         {hint && <p className="text-xs text-neutral-500">{hint}</p>}
       </div>
     </Card>
@@ -155,7 +155,7 @@ export default function WeeklyGoalPage() {
             <div className="animate-fade-in relative mb-5 flex items-center gap-3 overflow-hidden rounded-xl border border-brand/40 bg-brand/10 px-4 py-3.5" role="status">
               <Trophy className="h-5 w-5 shrink-0 text-accent" />
               <div>
-                <p className="font-serif text-lg leading-tight text-neutral-50">Meta batida!</p>
+                <p className="font-display text-lg leading-tight text-neutral-50">Meta batida!</p>
                 <p className="text-xs text-neutral-400">Você guardou {formatBRL(week.saved)} nesta semana.</p>
               </div>
               <div className="pointer-events-none absolute inset-y-0 right-4 flex items-end gap-3 pb-2" aria-hidden>
@@ -168,10 +168,10 @@ export default function WeeklyGoalPage() {
 
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="font-serif text-4xl text-neutral-50">{formatBRL(week.saved)}</p>
+              <p className="font-display text-4xl text-neutral-50">{formatBRL(week.saved)}</p>
               <p className="mt-1 text-sm text-neutral-500">de {formatBRL(week.goal)}</p>
             </div>
-            <p className={cx('font-serif text-3xl', week.hit ? 'text-brand' : 'text-accent')}>{week.percent}%</p>
+            <p className={cx('font-display text-3xl', week.hit ? 'text-brand' : 'text-accent')}>{week.percent}%</p>
           </div>
           <div className="mt-4 h-3 overflow-hidden rounded-full bg-bg" role="progressbar" aria-valuenow={week.percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da meta semanal">
             <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${week.percent}%` }} />
