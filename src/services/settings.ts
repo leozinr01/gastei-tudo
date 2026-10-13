@@ -6,6 +6,7 @@ function normalize(row: Settings): Settings {
   return {
     ...row,
     weekly_goal: Number(row.weekly_goal),
+    goal_period: row.goal_period ?? 'weekly',
     initial_balance: Number(row.initial_balance),
   }
 }

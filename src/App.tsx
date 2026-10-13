@@ -5,12 +5,11 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import { isSupabaseConfigured } from './lib/supabase'
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from './pages/Auth'
-import CashFlowPage from './pages/CashFlow'
 import DashboardPage from './pages/Dashboard'
 import LandingPage from './pages/Landing'
 import SettingsPage from './pages/Settings'
 import TransactionsPage from './pages/Transactions'
-import WeeklyGoalPage from './pages/WeeklyGoal'
+import GoalPage from './pages/Goal'
 
 /** Área logada: sem sessão, mostra a página inicial em "/" e manda as outras rotas para o login. */
 function ProtectedArea() {
@@ -66,8 +65,7 @@ export default function App() {
           <Route element={<ProtectedArea />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/transacoes" element={<TransactionsPage />} />
-            <Route path="/fluxo-de-caixa" element={<CashFlowPage />} />
-            <Route path="/meta" element={<WeeklyGoalPage />} />
+            <Route path="/meta" element={<GoalPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

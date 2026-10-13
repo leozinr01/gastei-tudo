@@ -20,20 +20,27 @@ export interface Transaction {
   created_at: string
 }
 
+/** De quanto em quanto tempo a meta de economia se renova. */
+export type GoalPeriod = 'daily' | 'weekly' | 'biweekly' | 'monthly'
+
 export interface SavingsDeposit {
   id: string
   user_id: string
   /** Data no formato aaaa-mm-dd */
   date: string
   amount: number
-  /** Meta semanal vigente quando o depósito foi feito */
+  /** Meta vigente quando o depósito foi feito */
   goal_snapshot: number | null
+  /** Período da meta vigente quando o depósito foi feito (sem valor = semanal) */
+  goal_period_snapshot: GoalPeriod | null
   created_at: string
 }
 
 export interface Settings {
   user_id: string
+  /** Valor da meta por período (o nome vem de quando a meta era só semanal). */
   weekly_goal: number
+  goal_period: GoalPeriod
   initial_balance: number
 }
 
@@ -42,7 +49,7 @@ export type TransactionInput = Pick<
   Transaction,
   'type' | 'amount' | 'description' | 'category_id' | 'date'
 >
-export type SettingsInput = Partial<Pick<Settings, 'weekly_goal' | 'initial_balance'>>
+export type SettingsInput = Partial<Pick<Settings, 'weekly_goal' | 'goal_period' | 'initial_balance'>>
 
 export interface Period {
   from: string

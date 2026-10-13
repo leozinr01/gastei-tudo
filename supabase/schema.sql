@@ -27,21 +27,25 @@ create table if not exists public.transactions (
 );
 
 -- Um registro por dia em que o usuário guardou dinheiro.
--- goal_snapshot guarda a meta semanal vigente no momento do depósito,
--- para que o histórico não mude quando a meta for alterada depois.
+-- goal_snapshot e goal_period_snapshot guardam a meta e o período (dia, semana,
+-- quinzena ou mês) vigentes no momento do depósito, para que o histórico não mude
+-- quando a meta for alterada depois.
 create table if not exists public.savings_deposits (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
   date          date not null,
   amount        numeric(12,2) not null check (amount > 0),
   goal_snapshot numeric(12,2),
+  goal_period_snapshot text check (goal_period_snapshot in ('daily', 'weekly', 'biweekly', 'monthly')),
   created_at    timestamptz not null default now(),
   unique (user_id, date)
 );
 
 create table if not exists public.settings (
   user_id         uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  -- Valor da meta por período (o nome da coluna vem de quando a meta era só semanal).
   weekly_goal     numeric(12,2) not null default 300 check (weekly_goal >= 0),
+  goal_period     text not null default 'weekly' check (goal_period in ('daily', 'weekly', 'biweekly', 'monthly')),
   initial_balance numeric(12,2) not null default 0
 );
 

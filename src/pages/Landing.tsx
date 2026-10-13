@@ -25,8 +25,8 @@ const SPENDING = [
 
 const FEATURES: Array<{ icon: LucideIcon; title: string; text: string }> = [
   { icon: ArrowLeftRight, title: 'Transações', text: 'Registre entradas e saídas em segundos. O saldo se atualiza na hora.' },
-  { icon: PiggyBank, title: 'Meta semanal', text: 'Defina um valor e acompanhe a Reserva crescer toda semana.' },
-  { icon: LineChart, title: 'Fluxo de caixa', text: 'Veja quanto entrou, quanto saiu e para onde o saldo está indo.' },
+  { icon: PiggyBank, title: 'Meta de economia', text: 'Guarde por dia, semana, quinzena ou mês e acompanhe a Reserva crescer.' },
+  { icon: LineChart, title: 'Gráficos', text: 'Veja quanto entrou, quanto saiu e para onde o saldo está indo.' },
   { icon: Tag, title: 'Categorias', text: 'Crie as suas e descubra qual delas pesa mais no mês.' },
 ]
 
@@ -117,7 +117,6 @@ function Donut({ className, children }: { className?: string; children: ReactNod
 const PHONE_NAV: Array<{ icon: LucideIcon; label: string }> = [
   { icon: LayoutDashboard, label: 'Início' },
   { icon: ArrowLeftRight, label: 'Transações' },
-  { icon: LineChart, label: 'Fluxo' },
   { icon: PiggyBank, label: 'Meta' },
   { icon: Settings, label: 'Ajustes' },
 ]
@@ -198,7 +197,7 @@ function PhonePreview() {
           </div>
 
           <div className="border-t border-line bg-card/60 px-2 pt-2">
-            <div className="grid grid-cols-5">
+            <div className="grid grid-cols-4">
               {PHONE_NAV.map(({ icon: Icon, label: name }, index) => (
                 <span key={name} className={cx('flex flex-col items-center gap-0.5 text-[7px] font-medium', index === 0 ? 'text-brand' : 'text-neutral-600')}>
                   <Icon className="h-4 w-4" />

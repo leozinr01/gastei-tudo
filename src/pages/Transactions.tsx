@@ -7,9 +7,73 @@ import { useData } from '../contexts/DataContext'
 import { errorMessage } from '../lib/errors'
 import { totals } from '../lib/finance'
 import { formatBRL, formatDate } from '../lib/format'
-import type { Transaction } from '../types'
+import type { Category, Transaction } from '../types'
 
 const PAGE_SIZE = 50
+
+/** Uma coluna da página: só entradas ou só saídas, com o total no cabeçalho. */
+function TransactionColumn({ type, items, total, categoryById, onEdit, onDelete }: {
+  type: Transaction['type']
+  items: Transaction[]
+  total: number
+  categoryById: Map<string, Category>
+  onEdit: (t: Transaction) => void
+  onDelete: (t: Transaction) => void
+}) {
+  const [limit, setLimit] = useState(PAGE_SIZE)
+  const income = type === 'income'
+
+  return (
+    <Card className="!p-0">
+      <div className="flex items-center gap-3 border-b border-line px-4 py-4 sm:px-6">
+        <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', income ? 'bg-brand/10 text-brand' : 'bg-danger/10 text-danger')}>
+          {income ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-neutral-100">{income ? 'Entradas' : 'Saídas'}</h2>
+          <p className="text-xs text-neutral-500">{items.length} {items.length === 1 ? 'transação' : 'transações'}</p>
+        </div>
+        <span className={cx('shrink-0 text-base font-semibold', income ? 'text-brand' : 'text-danger')}>{formatBRL(total)}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="px-4 py-10 text-center text-sm text-neutral-500 sm:px-6">{income ? 'Nenhuma entrada por aqui.' : 'Nenhuma saída por aqui.'}</p>
+      ) : (
+        <>
+          <ul className="divide-y divide-line">
+            {items.slice(0, limit).map((t) => {
+              const cat = t.category_id ? categoryById.get(t.category_id) : undefined
+              return (
+                <li key={t.id} className="flex items-center gap-3 py-3 pl-4 pr-2 sm:pl-6 sm:pr-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-neutral-100">{t.description || (cat?.name ?? (income ? 'Entrada' : 'Saída'))}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
+                      <span className="shrink-0">{formatDate(t.date)}</span>
+                      <span>·</span>
+                      {cat && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cat.color }} />}
+                      <span className="truncate">{cat?.name ?? 'Sem categoria'}</span>
+                    </p>
+                  </div>
+                  <span className={cx('shrink-0 text-sm font-semibold', income ? 'text-brand' : 'text-danger')}>
+                    {income ? '+' : '−'} {formatBRL(t.amount)}
+                  </span>
+                  <div className="flex shrink-0">
+                    <IconButton label="Editar" onClick={() => onEdit(t)}><Pencil className="h-4 w-4" /></IconButton>
+                    <IconButton label="Excluir" onClick={() => onDelete(t)} className="hover:!text-danger"><Trash2 className="h-4 w-4" /></IconButton>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          {items.length > limit && (
+            <div className="border-t border-line p-4 text-center">
+              <Button variant="ghost" onClick={() => setLimit((n) => n + PAGE_SIZE)}>Mostrar mais ({items.length - limit} restantes)</Button>
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
 
 export default function TransactionsPage() {
   const { transactions, categories, removeTransaction } = useData()
@@ -24,7 +88,6 @@ export default function TransactionsPage() {
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [toDelete, setToDelete] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [limit, setLimit] = useState(PAGE_SIZE)
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
@@ -41,6 +104,8 @@ export default function TransactionsPage() {
   }, [transactions, search, type, categoryId, from, to])
 
   const sum = totals(filtered)
+  const incomes = useMemo(() => filtered.filter((t) => t.type === 'income'), [filtered])
+  const expenses = useMemo(() => filtered.filter((t) => t.type === 'expense'), [filtered])
   const hasFilters = Boolean(search || type || categoryId || from || to)
 
   function clearFilters() {
@@ -102,54 +167,28 @@ export default function TransactionsPage() {
         )}
       </Card>
 
-      <Card className="!p-0">
-        {transactions.length === 0 ? (
+      {transactions.length === 0 ? (
+        <Card className="!p-0">
           <EmptyState icon={<Receipt className="h-5 w-5" />} title="Nenhuma transação ainda"
             text="Registre sua primeira entrada ou saída para começar a acompanhar seu dinheiro."
             action={<Button icon={<Plus className="h-4 w-4" />} onClick={openNew}>Nova transação</Button>} />
-        ) : filtered.length === 0 ? (
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card className="!p-0">
           <EmptyState icon={<Search className="h-5 w-5" />} title="Nada encontrado"
             text="Nenhuma transação combina com os filtros escolhidos."
             action={<Button variant="secondary" onClick={clearFilters}>Limpar filtros</Button>} />
-        ) : (
-          <>
-            <ul className="divide-y divide-line">
-              {filtered.slice(0, limit).map((t) => {
-                const cat = t.category_id ? categoryById.get(t.category_id) : undefined
-                const income = t.type === 'income'
-                return (
-                  <li key={t.id} className="flex items-center gap-3 px-4 py-3.5 sm:px-6">
-                    <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', income ? 'bg-brand/10 text-brand' : 'bg-danger/10 text-danger')}>
-                      {income ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-neutral-100">{t.description || (cat?.name ?? (income ? 'Entrada' : 'Saída'))}</p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
-                        {formatDate(t.date)}
-                        <span>·</span>
-                        {cat && <span className="h-2 w-2 rounded-full" style={{ background: cat.color }} />}
-                        <span className="truncate">{cat?.name ?? 'Sem categoria'}</span>
-                      </p>
-                    </div>
-                    <span className={cx('shrink-0 text-sm font-semibold', income ? 'text-brand' : 'text-danger')}>
-                      {income ? '+' : '−'} {formatBRL(t.amount)}
-                    </span>
-                    <div className="flex shrink-0">
-                      <IconButton label="Editar" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></IconButton>
-                      <IconButton label="Excluir" onClick={() => setToDelete(t)} className="hover:!text-danger"><Trash2 className="h-4 w-4" /></IconButton>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-            {filtered.length > limit && (
-              <div className="border-t border-line p-4 text-center">
-                <Button variant="ghost" onClick={() => setLimit((n) => n + PAGE_SIZE)}>Mostrar mais ({filtered.length - limit} restantes)</Button>
-              </div>
-            )}
-          </>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <div className={cx('grid items-start gap-4', !type && 'lg:grid-cols-2')}>
+          {type !== 'expense' && (
+            <TransactionColumn type="income" items={incomes} total={sum.income} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
+          )}
+          {type !== 'income' && (
+            <TransactionColumn type="expense" items={expenses} total={sum.expense} categoryById={categoryById} onEdit={openEdit} onDelete={setToDelete} />
+          )}
+        </div>
+      )}
 
       <TransactionForm open={formOpen} editing={editing} onClose={() => setFormOpen(false)} />
       <Modal open={categoriesOpen} onClose={() => setCategoriesOpen(false)} eyebrow="Organização" title="Categorias">

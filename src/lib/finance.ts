@@ -1,6 +1,6 @@
 import type { Period, SavingsDeposit, Settings, Transaction } from '../types'
 import {
-  addDays, monthEnd, monthKey, monthsBetween, monthStart, todayISO, weekStartOf,
+  addDays, monthKey, monthsBetween, periodEndOf, periodStartOf, todayISO,
 } from './dates'
 import { round2 } from './format'
 
@@ -118,62 +118,9 @@ export function monthlyFlow(
   return out
 }
 
-export interface DayRow {
-  date: string
-  income: number
-  expense: number
-  saved: number
-  balance: number
-}
-
-/** Visão diária de um mês: só os dias com movimentação. */
-export function dailyFlow(
-  month: string,
-  settings: Settings,
-  transactions: Transaction[],
-  deposits: SavingsDeposit[],
-): { opening: number; days: DayRow[] } {
-  const from = monthStart(month)
-  const to = monthEnd(month)
-  const series = balanceSeries(settings, transactions, deposits, { from, to })
-  const opening = round2(
-    settings.initial_balance +
-      totals(transactions.filter((t) => t.date < from)).result -
-      sumDeposits(deposits.filter((d) => d.date < from)),
-  )
-
-  const days = new Map<string, DayRow>()
-  const get = (date: string) => {
-    let r = days.get(date)
-    if (!r) {
-      r = { date, income: 0, expense: 0, saved: 0, balance: 0 }
-      days.set(date, r)
-    }
-    return r
-  }
-  for (const t of transactions) {
-    if (t.date < from || t.date > to) continue
-    if (t.type === 'income') get(t.date).income += t.amount
-    else get(t.date).expense += t.amount
-  }
-  for (const d of deposits) {
-    if (d.date < from || d.date > to) continue
-    get(d.date).saved += d.amount
-  }
-  const balanceByDate = new Map(series.map((p) => [p.date, p.balance]))
-  const list = [...days.values()].sort((a, b) => a.date.localeCompare(b.date))
-  for (const r of list) {
-    r.income = round2(r.income)
-    r.expense = round2(r.expense)
-    r.saved = round2(r.saved)
-    r.balance = balanceByDate.get(r.date) ?? 0
-  }
-  return { opening, days: list }
-}
-
-export interface WeekSummary {
-  weekStart: string
-  weekEnd: string
+export interface GoalSummary {
+  start: string
+  end: string
   goal: number
   saved: number
   hit: boolean
@@ -181,40 +128,42 @@ export interface WeekSummary {
 }
 
 /**
- * Resumo de cada semana (domingo a sábado), da primeira em que houve depósito até a atual.
- * A semana atual usa a meta das Configurações; as anteriores usam a meta que valia
- * quando o último depósito daquela semana foi feito.
+ * Resumo de cada período da meta (dia, semana, quinzena ou mês, conforme as Configurações),
+ * do primeiro em que houve depósito até o atual. O período atual usa a meta das Configurações;
+ * os anteriores usam a meta que valia quando o último depósito daquele período foi feito,
+ * desde que ela tenha sido definida para o mesmo tipo de período.
  */
-export function weeklySummaries(
+export function goalSummaries(
   deposits: SavingsDeposit[],
   settings: Settings,
   today = todayISO(),
-): WeekSummary[] {
-  const currentWeek = weekStartOf(today)
-  const byWeek = new Map<string, { saved: number; goal: number | null; lastDate: string }>()
-  let first = currentWeek
+): GoalSummary[] {
+  const period = settings.goal_period
+  const currentStart = periodStartOf(today, period)
+  const byStart = new Map<string, { saved: number; goal: number | null; lastDate: string }>()
+  let first = currentStart
 
   for (const d of deposits) {
-    const w = weekStartOf(d.date)
-    if (w < first) first = w
-    const cur = byWeek.get(w) ?? { saved: 0, goal: null, lastDate: '' }
+    const s = periodStartOf(d.date, period)
+    if (s < first) first = s
+    const cur = byStart.get(s) ?? { saved: 0, goal: null, lastDate: '' }
     cur.saved += d.amount
     if (d.date >= cur.lastDate) {
       cur.lastDate = d.date
-      cur.goal = d.goal_snapshot
+      cur.goal = (d.goal_period_snapshot ?? 'weekly') === period ? d.goal_snapshot : null
     }
-    byWeek.set(w, cur)
+    byStart.set(s, cur)
   }
 
-  const out: WeekSummary[] = []
-  for (let w = first; w <= currentWeek; w = addDays(w, 7)) {
-    const info = byWeek.get(w)
-    const isCurrent = w === currentWeek
+  const out: GoalSummary[] = []
+  for (let s = first; s <= currentStart; s = addDays(periodEndOf(s, period), 1)) {
+    const info = byStart.get(s)
+    const isCurrent = s === currentStart
     const goal = isCurrent ? settings.weekly_goal : info?.goal ?? settings.weekly_goal
     const saved = round2(info?.saved ?? 0)
     out.push({
-      weekStart: w,
-      weekEnd: addDays(w, 6),
+      start: s,
+      end: periodEndOf(s, period),
       goal,
       saved,
       hit: goal > 0 && saved >= goal,
@@ -224,13 +173,13 @@ export function weeklySummaries(
   return out
 }
 
-/** Semanas seguidas batendo a meta. A semana atual, ainda em andamento, não quebra a sequência. */
-export function goalStreak(weeks: WeekSummary[]): number {
+/** Períodos seguidos batendo a meta. O período atual, ainda em andamento, não quebra a sequência. */
+export function goalStreak(periods: GoalSummary[]): number {
   let streak = 0
-  for (let i = weeks.length - 1; i >= 0; i--) {
-    const w = weeks[i]
-    if (w.hit) streak++
-    else if (w.isCurrent) continue
+  for (let i = periods.length - 1; i >= 0; i--) {
+    const p = periods[i]
+    if (p.hit) streak++
+    else if (p.isCurrent) continue
     else break
   }
   return streak

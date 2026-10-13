@@ -1,6 +1,6 @@
 # Gastei Tudo
 
-Sistema web de finanças pessoais: entradas e saídas, fluxo de caixa e meta semanal de poupança.
+Sistema web de finanças pessoais: entradas e saídas, gráficos e meta semanal de poupança.
 
 **Stack:** React + Vite + TypeScript + Tailwind CSS, gráficos com Recharts e banco/autenticação no Supabase (sem servidor próprio).
 
@@ -77,7 +77,7 @@ src/
   contexts/              Sessão (AuthContext) e dados do usuário (DataContext)
   lib/                   Formatação, datas e cálculos financeiros
   components/            Layout, formulários e componentes de interface
-  pages/                 Dashboard, Transações, Fluxo de caixa, Meta semanal, Configurações, login
+  pages/                 Dashboard, Transações, Meta semanal, Configurações, login
 ```
 
 ## Scripts

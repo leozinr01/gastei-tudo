@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { ArrowLeftRight, LayoutDashboard, LineChart, ChevronLeft, ChevronRight, LogOut, PiggyBank, Settings, TrendingUp } from 'lucide-react'
+import { ArrowLeftRight, LayoutDashboard, ChevronLeft, ChevronRight, LogOut, PiggyBank, Settings, TrendingUp } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { errorMessage } from '../lib/errors'
@@ -10,8 +10,7 @@ import { cx, ErrorBox, Spinner, useToast } from './ui'
 const NAV = [
   { to: '/', label: 'Dashboard', short: 'Início', icon: LayoutDashboard, end: true },
   { to: '/transacoes', label: 'Transações', short: 'Transações', icon: ArrowLeftRight },
-  { to: '/fluxo-de-caixa', label: 'Fluxo de caixa', short: 'Fluxo', icon: LineChart },
-  { to: '/meta', label: 'Meta semanal', short: 'Meta', icon: PiggyBank },
+  { to: '/meta', label: 'Meta', short: 'Meta', icon: PiggyBank },
   { to: '/configuracoes', label: 'Configurações', short: 'Ajustes', icon: Settings },
 ]
 
@@ -145,7 +144,7 @@ export default function Layout() {
 
       {/* Barra inferior (celular) */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden"
         aria-label="Principal"
       >
         {NAV.map(({ to, short, icon: Icon, end }) => (

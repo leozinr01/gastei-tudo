@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import type { SavingsDeposit } from '../types'
+import type { GoalPeriod, SavingsDeposit } from '../types'
 import { requireUserId } from './auth'
 
 const PAGE = 1000
@@ -9,6 +9,7 @@ function normalize(row: SavingsDeposit): SavingsDeposit {
     ...row,
     amount: Number(row.amount),
     goal_snapshot: row.goal_snapshot === null ? null : Number(row.goal_snapshot),
+    goal_period_snapshot: row.goal_period_snapshot ?? null,
   }
 }
 
@@ -31,12 +32,13 @@ export async function listDeposits(): Promise<SavingsDeposit[]> {
 export async function saveDeposit(
   date: string,
   amount: number,
-  weeklyGoal: number,
+  goal: number,
+  goalPeriod: GoalPeriod,
 ): Promise<SavingsDeposit> {
   const user_id = await requireUserId()
   const { data, error } = await supabase
     .from('savings_deposits')
-    .upsert({ user_id, date, amount, goal_snapshot: weeklyGoal }, { onConflict: 'user_id,date' })
+    .upsert({ user_id, date, amount, goal_snapshot: goal, goal_period_snapshot: goalPeriod }, { onConflict: 'user_id,date' })
     .select()
     .single()
   if (error) throw error

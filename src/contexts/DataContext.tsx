@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
 import { errorMessage } from '../lib/errors'
 import * as accountService from '../services/account'
@@ -42,12 +42,18 @@ export function DataProvider({ userId, children }: { userId: string; children: R
   const [settings, setSettings] = useState<Settings>({
     user_id: userId,
     weekly_goal: 300,
+    goal_period: 'weekly',
     initial_balance: 0,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Só a carga mais recente aplica o resultado: duas cargas seguidas trocariam os dados
+  // duas vezes e cortariam a animação de entrada dos gráficos.
+  const loadId = useRef(0)
+
   const reload = useCallback(async () => {
+    const id = ++loadId.current
     setLoading(true)
     setError(null)
     try {
@@ -57,14 +63,16 @@ export function DataProvider({ userId, children }: { userId: string; children: R
         transactionService.listTransactions(),
         savingsService.listDeposits(),
       ])
+      if (id !== loadId.current) return
       setSettings(s)
       setCategories(c.sort(byName))
       setTransactions(t)
       setDeposits(d)
     } catch (e) {
+      if (id !== loadId.current) return
       setError(errorMessage(e, 'Não foi possível carregar seus dados.'))
     } finally {
-      setLoading(false)
+      if (id === loadId.current) setLoading(false)
     }
   }, [])
 
@@ -102,12 +110,12 @@ export function DataProvider({ userId, children }: { userId: string; children: R
 
   const saveDeposit = useCallback(
     async (date: string, amount: number) => {
-      const saved = await savingsService.saveDeposit(date, amount, settings.weekly_goal)
+      const saved = await savingsService.saveDeposit(date, amount, settings.weekly_goal, settings.goal_period)
       setDeposits((list) =>
         [saved, ...list.filter((d) => d.date !== date)].sort((a, b) => b.date.localeCompare(a.date)),
       )
     },
-    [settings.weekly_goal],
+    [settings.weekly_goal, settings.goal_period],
   )
 
   const removeDeposit = useCallback(async (date: string) => {

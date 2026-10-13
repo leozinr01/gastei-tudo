@@ -1,7 +1,7 @@
 {
   "name": "Gastei Tudo",
   "short_name": "Gastei Tudo",
-  "description": "Controle de gastos, fluxo de caixa e meta semanal.",
+  "description": "Controle de gastos, gráficos e meta semanal.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",

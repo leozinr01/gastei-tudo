@@ -1,3 +1,5 @@
+import type { GoalPeriod } from '../types'
+
 // Todas as datas circulam pelo app como texto "aaaa-mm-dd" (data local, sem fuso),
 // o que permite comparar com < e > e evita o deslocamento de um dia do UTC.
 
@@ -28,8 +30,11 @@ export function weekStartOf(iso: string): string {
   return addDays(iso, -d.getDay())
 }
 
-export function weekDays(weekStart: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+/** Todos os dias de `from` até `to`, incluindo os dois. */
+export function daysBetween(from: string, to: string): string[] {
+  const out: string[] = []
+  for (let d = from; d <= to; d = addDays(d, 1)) out.push(d)
+  return out
 }
 
 /** aaaa-mm */
@@ -79,4 +84,25 @@ export function monthLongLabel(month: string): string {
 
 export function weekdayName(iso: string): string {
   return WEEKDAYS[parseISO(iso).getDay()]
+}
+
+/**
+ * Primeiro dia do período da meta que contém a data. A semana vai de domingo a sábado
+ * e a quinzena é a do calendário: do dia 1 ao 15 e do 16 ao fim do mês.
+ */
+export function periodStartOf(iso: string, period: GoalPeriod): string {
+  if (period === 'daily') return iso
+  if (period === 'weekly') return weekStartOf(iso)
+  const month = monthKey(iso)
+  if (period === 'biweekly' && iso.slice(8) >= '16') return `${month}-16`
+  return monthStart(month)
+}
+
+/** Último dia do período da meta que começa em `start`. */
+export function periodEndOf(start: string, period: GoalPeriod): string {
+  if (period === 'daily') return start
+  if (period === 'weekly') return addDays(start, 6)
+  const month = monthKey(start)
+  if (period === 'biweekly' && start.slice(8) === '01') return `${month}-15`
+  return monthEnd(month)
 }

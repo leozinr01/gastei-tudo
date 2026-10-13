@@ -5,8 +5,10 @@ import { Button, Card, CardTitle, Modal, MoneyInput, PageHeader, useToast } from
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { errorMessage } from '../lib/errors'
+import { GOAL_PERIOD_ORDER, GOAL_PERIODS } from '../lib/goal'
 import { downloadExport } from '../services/account'
 import { displayName, signOut, updateName } from '../services/auth'
+import type { GoalPeriod } from '../types'
 
 const CONFIRM_WORD = 'APAGAR'
 
@@ -15,6 +17,7 @@ export default function SettingsPage() {
   const { settings, categories, transactions, deposits, saveSettings, resetAll } = useData()
   const toast = useToast()
   const [goal, setGoal] = useState(settings.weekly_goal)
+  const [goalPeriod, setGoalPeriod] = useState(settings.goal_period)
   const [initial, setInitial] = useState(Math.abs(settings.initial_balance))
   const [negative, setNegative] = useState(settings.initial_balance < 0)
   const [saving, setSaving] = useState(false)
@@ -29,18 +32,19 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setGoal(settings.weekly_goal)
+    setGoalPeriod(settings.goal_period)
     setInitial(Math.abs(settings.initial_balance))
     setNegative(settings.initial_balance < 0)
   }, [settings])
 
   const initialValue = negative ? -initial : initial
-  const dirty = goal !== settings.weekly_goal || initialValue !== settings.initial_balance
+  const dirty = goal !== settings.weekly_goal || goalPeriod !== settings.goal_period || initialValue !== settings.initial_balance
 
   async function handleSave(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      await saveSettings({ weekly_goal: goal, initial_balance: initialValue })
+      await saveSettings({ weekly_goal: goal, goal_period: goalPeriod, initial_balance: initialValue })
       toast.success('Configurações salvas.')
     } catch (err) {
       toast.error(errorMessage(err, 'Não foi possível salvar as configurações.'))
@@ -101,9 +105,15 @@ export default function SettingsPage() {
           <CardTitle eyebrow="Valores" title="Meta e saldo inicial" />
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="field-label" htmlFor="goal">Meta semanal (quanto guardar por semana)</label>
+              <label className="field-label" htmlFor="goal-period">De quanto em quanto tempo você quer guardar</label>
+              <select id="goal-period" className="field" value={goalPeriod} onChange={(e) => setGoalPeriod(e.target.value as GoalPeriod)}>
+                {GOAL_PERIOD_ORDER.map((p) => <option key={p} value={p}>{GOAL_PERIODS[p].label} · {GOAL_PERIODS[p].range.toLowerCase()}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="goal">Meta (quanto guardar {GOAL_PERIODS[goalPeriod].per})</label>
               <MoneyInput id="goal" value={goal} onChange={setGoal} />
-              <p className="mt-1.5 text-xs text-neutral-600">Vale a partir da semana atual. As semanas já concluídas mantêm a meta que tinham.</p>
+              <p className="mt-1.5 text-xs text-neutral-600">Vale a partir do período atual. Os períodos já concluídos mantêm a meta que tinham.</p>
             </div>
             <div>
               <label className="field-label" htmlFor="initial">Saldo inicial</label>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -12,7 +12,7 @@ import { useData } from '../contexts/DataContext'
 import { monthShortLabel, todayISO } from '../lib/dates'
 import { availableBalance, balanceSeries, inPeriod, monthlyFlow, sumDeposits, totals } from '../lib/finance'
 import { formatBRL, formatCompact, formatDate, formatDayMonth } from '../lib/format'
-import { currentWeekStatus } from '../lib/week'
+import { currentGoalStatus, GOAL_PERIODS } from '../lib/goal'
 
 const PRESETS: Array<{ id: Exclude<PeriodPreset, 'custom'>; label: string }> = [
   { id: 'month', label: 'Mês atual' },
@@ -33,6 +33,25 @@ function Stat({ label, value, icon, auto }: { label: string; value: number; icon
   )
 }
 
+type CategorySlice = { name: string; value: number; fill: string }
+
+/**
+ * Rosca de gastos por categoria. Fica em um componente memoizado porque qualquer
+ * novo desenho do gráfico no meio da animação de entrada faz ela ser cortada.
+ */
+const CategoryPie = memo(function CategoryPie({ data }: { data: CategorySlice[] }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} paddingAngle={2} stroke="#141414" strokeWidth={2}>
+          {data.map((c) => <Cell key={c.name} fill={c.fill} />)}
+        </Pie>
+        <Tooltip content={<ChartTooltip />} />
+      </PieChart>
+    </ResponsiveContainer>
+  )
+})
+
 export default function DashboardPage() {
   const { transactions, deposits, settings, categories } = useData()
   const [filter, setFilter] = useState(defaultPeriodState)
@@ -43,7 +62,8 @@ export default function DashboardPage() {
   const reserve = sumDeposits(deposits)
   const periodTx = useMemo(() => inPeriod(transactions, period), [transactions, period])
   const periodTotals = totals(periodTx)
-  const week = useMemo(() => currentWeekStatus(deposits, settings), [deposits, settings])
+  const week = useMemo(() => currentGoalStatus(deposits, settings), [deposits, settings])
+  const goalText = GOAL_PERIODS[week.period]
 
   const history = useMemo(
     () => {
@@ -57,7 +77,7 @@ export default function DashboardPage() {
 
   const byCategory = useMemo(() => {
     const names = new Map(categories.map((c) => [c.id, c]))
-    const map = new Map<string, { name: string; value: number; fill: string }>()
+    const map = new Map<string, CategorySlice>()
     for (const t of periodTx) {
       if (t.type !== 'expense') continue
       const cat = t.category_id ? names.get(t.category_id) : undefined
@@ -105,7 +125,7 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Saldo + meta da semana */}
+      {/* Saldo + meta do período */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <section className="flex flex-col rounded-2xl border border-accent/25 bg-linear-to-br from-accent/[0.16] via-card to-card p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
@@ -128,8 +148,8 @@ export default function DashboardPage() {
 
         <Card className="flex flex-col">
           <div className="flex items-center justify-between gap-3">
-            <p className={cx(LABEL, 'text-neutral-500')}>Meta da semana</p>
-            <Link to="/meta" aria-label="Abrir meta semanal" className="-my-2 -mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/5 hover:text-neutral-100">
+            <p className={cx(LABEL, 'text-neutral-500')}>Meta {goalText.ofThe}</p>
+            <Link to="/meta" aria-label="Abrir meta" className="-my-2 -mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/5 hover:text-neutral-100">
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -141,17 +161,19 @@ export default function DashboardPage() {
             <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${week.percent}%` }} />
           </div>
           <p className="mt-2.5 text-sm text-neutral-500">de {formatBRL(week.goal)} guardados</p>
-          <div className="mt-4 flex gap-1.5" aria-hidden>
-            {week.days.map((d) => (
-              <span key={d.date} title={formatDate(d.date)}
-                className={cx('h-1.5 flex-1 rounded-full', d.deposit ? 'bg-brand' : d.isPast ? 'bg-danger/50' : d.isToday ? 'bg-accent/70' : 'bg-line')} />
-            ))}
-          </div>
+          {week.period === 'weekly' && (
+            <div className="mt-4 flex gap-1.5" aria-hidden>
+              {week.days.map((d) => (
+                <span key={d.date} title={formatDate(d.date)}
+                  className={cx('h-1.5 flex-1 rounded-full', d.deposit ? 'bg-brand' : d.isPast ? 'bg-danger/50' : d.isToday ? 'bg-accent/70' : 'bg-line')} />
+              ))}
+            </div>
+          )}
           <p className="mt-auto pt-5 text-sm text-neutral-400">
             {week.hit
-              ? 'Parabéns, a meta desta semana está garantida.'
-              : week.daysLeft > 0
-                ? <>Faltam <b className="text-neutral-100">{formatBRL(week.remaining)}</b>. Guarde <b className="text-accent">{formatBRL(week.suggestion)}</b> por dia até sábado.</>
+              ? `Parabéns, a meta ${goalText.ofThe} está garantida.`
+              : week.daysLeft > 0 && week.period === 'weekly'
+                ? <>Faltam <b className="text-neutral-100">{formatBRL(week.remaining)}</b>. Guarde <b className="text-accent">{formatBRL(week.suggestion)}</b> por dia {goalText.until}.</>
                 : <>Faltam <b className="text-neutral-100">{formatBRL(week.remaining)}</b> para a meta.</>}
           </p>
         </Card>
@@ -174,14 +196,7 @@ export default function DashboardPage() {
           ) : (
             <div className="flex flex-col items-center gap-8 sm:flex-row">
               <div className="relative h-48 w-48 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} paddingAngle={2} stroke="#141414" strokeWidth={2}>
-                      {byCategory.map((c) => <Cell key={c.name} fill={c.fill} />)}
-                    </Pie>
-                    <Tooltip content={<ChartTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <CategoryPie data={byCategory} />
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className={cx(LABEL, 'text-[10px] text-neutral-500')}>Total</span>
                   <span className="text-sm font-semibold text-neutral-100">{formatBRL(periodTotals.expense)}</span>
